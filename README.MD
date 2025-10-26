@@ -1,0 +1,1 @@
+visit this to setup the models locally https://chatgpt.com/share/68fe98f7-1158-800f-90e1-6c828da722c2
