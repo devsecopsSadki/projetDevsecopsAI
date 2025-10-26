@@ -22,3 +22,15 @@ your-project/
 ```bash
 pip install requests openai anthropic
 ```
+
+
+##Setup Sonar Qube
+
+```bash
+# Run in Docker
+docker run -d --name sonarqube -p 9000:9000 sonarqube:latest
+
+# Access: http://localhost:9000
+# Default: admin/admin
+
+```
