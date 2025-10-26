@@ -20,12 +20,14 @@ pipeline {
         stage('Build Application') {
             steps {
                 echo ' Building application...'
+                dir('FetchingData'){
                 script {
                     try {
                         sh 'mvn clean compile -DskipTests'
                     } catch (Exception e) {
                         echo "Build skipped: ${e.message}"
                     }
+                }
                 }
             }
         }
@@ -39,7 +41,8 @@ pipeline {
                         sh """
                             sonar-scanner \
                                 -Dsonar.projectKey=my-project \
-                                -Dsonar.sources=src
+                                -Dsonar.sources=FetchingData/src \
+                                -Dsonar.java.binaries=FetchingData/target/classes
                         """
                     }
                 }
@@ -55,7 +58,7 @@ pipeline {
                     }
                 }
 
-                echo '✅ SAST scan completed'
+                echo ' SAST scan completed'
             }
         }
 
