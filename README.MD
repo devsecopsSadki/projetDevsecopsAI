@@ -24,7 +24,7 @@ pip install requests openai anthropic
 ```
 
 
-##Setup Sonar Qube
+## Setup Sonar Qube
 
 ```bash
 # Run in Docker
