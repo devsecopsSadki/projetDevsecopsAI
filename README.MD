@@ -17,6 +17,8 @@ your-project/
 ├── FetchingData/src           # Application source code
 │  
 └── requirements.txt           # Python dependencies
+```
 
 ```bash
 pip install requests openai anthropic
+```
