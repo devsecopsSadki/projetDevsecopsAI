@@ -1,0 +1,42 @@
+pipeline{
+    agent any
+
+    when{
+        anyOf{
+            changeset "SpaceApp/SpringBackend/FetchingData/**"
+        }
+    }
+
+    stages{
+        stage("tests and building jars"){
+            steps{
+                sh "mvn clean package -DskipTests=true"
+                sh "mvn test"
+            }
+            post {
+                always {
+                    publishTestResults testResultsPattern: 'target/surefire-reports/*.xml'
+                }
+            }
+        }
+
+        stage("building docker image and pushing it to docker hub"){
+            steps{
+                withCredentials([usernamePassword(credentialsId:'dockerHubCreds',usernameVariable:'DOCKERHUB_USER',passwordVariable:'DOCKERHUB_TOKEN')]){
+                    def image = "${DOCKERHUB_USER}/fetching-data-service:latest"
+                    sh "echo \$DOCKERHUB_TOKEN |  docker login -u \$DOCKERHUB_USER --password-stdin"
+                    sh "docker build -t ${image} ."
+                    sh "docker push ${image}"
+                    sh "docker logout"
+                }
+            }
+        }
+
+        stage("deploying to kubernetes"){
+            steps{
+                sh "kubectl apply -f deployment.yml"
+                sh "kubectl apply -f service.yml"
+            }
+        }
+    }
+}

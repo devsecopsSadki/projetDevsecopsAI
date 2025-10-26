@@ -1,0 +1,25 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fetching-data-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fetching-data-service
+  template:
+    metadata:
+      labels:
+        app: fetching-data-service
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+        - name: fetching-data-service
+          image: youssefbouraoui1/fetching-data-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8082
+      imagePullSecrets:
+        - name: regcred
