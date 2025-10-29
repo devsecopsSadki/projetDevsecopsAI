@@ -1,0 +1,224 @@
+{
+  "title": "External Initialization of Trusted Variables or Data Stores",
+  "severity": "medium",
+  "packageName": "ch.qos.logback:logback-core",
+  "current_version": "1.5.18",
+  "recommended_version": "1.5.19"
+}
+{
+  "title": "Information Disclosure",
+  "severity": "low",
+  "packageName": "com.google.guava:guava",
+  "current_version": "14.0.1",
+  "recommended_version": "30.0-android"
+}
+{
+  "title": "Deserialization of Untrusted Data",
+  "severity": "medium",
+  "packageName": "com.google.guava:guava",
+  "current_version": "14.0.1",
+  "recommended_version": "24.1.1"
+}
+{
+  "title": "Creation of Temporary File in Directory with Insecure Permissions",
+  "severity": "low",
+  "packageName": "com.google.guava:guava",
+  "current_version": "14.0.1",
+  "recommended_version": "32.0.0-android"
+}
+{
+  "title": "Allocation of Resources Without Limits or Throttling",
+  "severity": "medium",
+  "packageName": "commons-configuration:commons-configuration",
+  "current_version": "1.10",
+  "recommended_version": "N/A"
+}
+{
+  "title": "Uncontrolled Recursion",
+  "severity": "high",
+  "packageName": "commons-lang:commons-lang",
+  "current_version": "2.6",
+  "recommended_version": "N/A"
+}
+{
+  "title": "Deserialization of Untrusted Data",
+  "severity": "high",
+  "packageName": "com.thoughtworks.xstream:xstream",
+  "current_version": "1.4.20",
+  "recommended_version": "1.4.21"
+}
+{
+  "title": "Improper Input Validation",
+  "severity": "medium",
+  "packageName": "org.apache.httpcomponents:httpclient",
+  "current_version": "4.5.3",
+  "recommended_version": "4.5.13"
+}
+{
+  "title": "Improper Certificate Validation",
+  "severity": "high",
+  "packageName": "org.apache.httpcomponents.client5:httpclient5",
+  "current_version": "5.4.2",
+  "recommended_version": "5.4.3"
+}
+{
+  "title": "Server-side Request Forgery (SSRF)",
+  "severity": "high",
+  "packageName": "org.apache.kafka:kafka-clients",
+  "current_version": "3.8.1",
+  "recommended_version": "3.9.1"
+}
+{
+  "title": "Deserialization of Untrusted Data",
+  "severity": "high",
+  "packageName": "org.apache.kafka:kafka-clients",
+  "current_version": "3.8.1",
+  "recommended_version": "3.9.1"
+}
+{
+  "title": "Deserialization of Untrusted Data",
+  "severity": "high",
+  "packageName": "org.apache.kafka:kafka-clients",
+  "current_version": "3.8.1",
+  "recommended_version": "3.9.1"
+}
+{
+  "title": "Improper Handling of Case Sensitivity",
+  "severity": "medium",
+  "packageName": "org.apache.tomcat.embed:tomcat-embed-core",
+  "current_version": "10.1.39",
+  "recommended_version": "9.0.105"
+}
+{
+  "title": "Allocation of Resources Without Limits or Throttling",
+  "severity": "high",
+  "packageName": "org.apache.tomcat.embed:tomcat-embed-core",
+  "current_version": "10.1.39",
+  "recommended_version": "9.0.106"
+}
+{
+  "title": "Authentication Bypass Using an Alternate Path or Channel",
+  "severity": "medium",
+  "packageName": "org.apache.tomcat.embed:tomcat-embed-core",
+  "current_version": "10.1.39",
+  "recommended_version": "9.0.106"
+}
+{
+  "title": "Integer Overflow or Wraparound",
+  "severity": "high",
+  "packageName": "org.apache.tomcat.embed:tomcat-embed-core",
+  "current_version": "10.1.39",
+  "recommended_version": "9.0.107"
+}
+{
+  "title": "Allocation of Resources Without Limits or Throttling",
+  "severity": "high",
+  "packageName": "org.apache.tomcat.embed:tomcat-embed-core",
+  "current_version": "10.1.39",
+  "recommended_version": "9.0.107"
+}
+{
+  "title": "Session Fixation",
+  "severity": "medium",
+  "packageName": "org.apache.tomcat.embed:tomcat-embed-core",
+  "current_version": "10.1.39",
+  "recommended_version": "9.0.106"
+}
+{
+  "title": "Improper Resource Shutdown or Release",
+  "severity": "high",
+  "packageName": "org.apache.tomcat.embed:tomcat-embed-core",
+  "current_version": "10.1.39",
+  "recommended_version": "9.0.108"
+}
+{
+  "title": "Improper Resource Shutdown or Release",
+  "severity": "medium",
+  "packageName": "org.apache.tomcat.embed:tomcat-embed-core",
+  "current_version": "10.1.39",
+  "recommended_version": "9.0.110"
+}
+{
+  "title": "Relative Path Traversal",
+  "severity": "high",
+  "packageName": "org.apache.tomcat.embed:tomcat-embed-core",
+  "current_version": "10.1.39",
+  "recommended_version": "9.0.109"
+}
+{
+  "title": "Untrusted Search Path",
+  "severity": "high",
+  "packageName": "org.apache.tomcat.embed:tomcat-embed-core",
+  "current_version": "10.1.39",
+  "recommended_version": "9.0.106"
+}
+{
+  "title": "Improper Cleanup on Thrown Exception",
+  "severity": "high",
+  "packageName": "org.apache.tomcat.embed:tomcat-embed-core",
+  "current_version": "10.1.39",
+  "recommended_version": "9.0.104"
+}
+{
+  "title": "Improper Neutralization",
+  "severity": "medium",
+  "packageName": "org.apache.tomcat.embed:tomcat-embed-core",
+  "current_version": "10.1.39",
+  "recommended_version": "9.0.104"
+}
+{
+  "title": "Allocation of Resources Without Limits or Throttling",
+  "severity": "medium",
+  "packageName": "org.bouncycastle:bcprov-jdk18on",
+  "current_version": "1.78.1",
+  "recommended_version": "1.79"
+}
+{
+  "title": "Improper Handling of Case Sensitivity",
+  "severity": "low",
+  "packageName": "org.springframework:spring-context",
+  "current_version": "6.2.5",
+  "recommended_version": "6.1.20"
+}
+{
+  "title": "HTTP Response Splitting",
+  "severity": "medium",
+  "packageName": "org.springframework:spring-web",
+  "current_version": "6.2.5",
+  "recommended_version": "6.1.21"
+}
+{
+  "title": "Relative Path Traversal",
+  "severity": "high",
+  "packageName": "org.springframework:spring-beans",
+  "current_version": "6.2.5",
+  "recommended_version": "6.2.10"
+}
+{
+  "title": "Incorrect Authorization",
+  "severity": "high",
+  "packageName": "org.springframework:spring-core",
+  "current_version": "6.2.5",
+  "recommended_version": "6.2.11"
+}
+{
+  "title": "Cross-site Request Forgery (CSRF)",
+  "severity": "medium",
+  "packageName": "org.springframework:spring-websocket",
+  "current_version": "6.2.5",
+  "recommended_version": "6.2.12"
+}
+{
+  "title": "Improper Input Validation",
+  "severity": "medium",
+  "packageName": "org.springframework.boot:spring-boot-actuator-autoconfigure",
+  "current_version": "3.4.4",
+  "recommended_version": "3.3.11"
+}
+{
+  "title": "Timing Attack",
+  "severity": "medium",
+  "packageName": "org.springframework.security:spring-security-crypto",
+  "current_version": "6.4.4",
+  "recommended_version": "6.3.9"
+}

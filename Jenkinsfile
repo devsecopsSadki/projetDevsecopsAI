@@ -31,6 +31,46 @@ pipeline {
                 }
             }
         }
+        
+        stage('SCA - Dependency Scan') {
+	    steps {
+		script {
+		    echo "Running SCA for Maven project..."
+		    sh '''
+		        # Install Snyk if not present
+		        command -v snyk || npm install -g snyk
+		    '''
+
+		    withCredentials([string(credentialsId: 'SNYK_TOKEN', variable: 'SNYK_TOKEN')]) {
+		        sh '''
+		            # Authenticate Snyk
+		            snyk auth $SNYK_TOKEN
+
+		            # Run Snyk scan and generate JSON report
+		            snyk test --file=pom.xml --package-manager=maven --json \
+		              | jq '.vulnerabilities[] | {
+		                  title,
+		                  severity,
+		                  packageName,
+		                  current_version: .version,
+		                  recommended_version: (
+		                    (.fixedIn[0]) // 
+		                    (.upgradePath[-1] | select(. != false)) // 
+		                    "N/A"
+		                  )
+		                }' > ${REPORTS_DIR}/sca-report.json || true
+		        '''
+		    }
+		}
+	    }
+	    post {
+		always {
+		    archiveArtifacts artifacts: "${REPORTS_DIR}/sca-report.json", fingerprint: true
+		}
+	    }
+	}
+
+
 
         stage('SAST Analysis') {
             steps {
