@@ -8,24 +8,23 @@ your-project/
 ├── requirements.txt                # Python dependencies
 ├── Jenkinsfile                     # Jenkins CI/CD pipeline
 │
-├── src/
-│   ├── app/                        # Sample vulnerable application
-│   │   └── [your code to scan]
-│   │
-│   ├── parsers/
-│   │   ├── sast_parser.py          # Parse SAST reports (SonarQube)
-│   │   ├── sca_parser.py           # Parse SCA reports (OWASP Dependency-Check)
-│   │   ├── dast_parser.py          # Parse DAST reports (OWASP ZAP)
-│   │   └── unified_parser.py       # Combine all reports into structured format
-│   │
-│   ├── policy_generation/
-│   │   ├── prompt_templates.py     # Prompt engineering templates
-│   │   ├── hf_api_client.py        # Hugging Face API integration
-│   │   └── policy_generator.py     # Main policy generation logic
-│   │
-│   └── evaluation/
-│       ├── metrics.py              # BLEU, ROUGE-L calculations
-│       └── compare_policies.py     # Compare with NIST/ISO templates
+├── app/                        # Sample vulnerable application
+│   └── [your code to scan]
+│
+├── parsers/
+│   ├── sast_parser.py          # Parse SAST reports (SonarQube)
+│   ├── sca_parser.py           # Parse SCA reports (OWASP Dependency-Check)
+│   ├── dast_parser.py          # Parse DAST reports (OWASP ZAP)
+│   └── unified_parser.py       # Combine all reports into structured format
+│
+├── policy_generation/
+│   ├── prompt_templates.py     # Prompt engineering templates
+│   ├── hf_api_client.py        # Hugging Face API integration
+│   └── policy_generator.py     # Main policy generation logic
+│
+├── evaluation/
+│  ├── metrics.py              # BLEU, ROUGE-L calculations
+│  └── compare_policies.py     # Compare with NIST/ISO templates
 │
 ├── security-reports/               # Generated reports (gitignored)
 │   ├── raw/
