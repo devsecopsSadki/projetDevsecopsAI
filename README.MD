@@ -15,7 +15,7 @@ your-project/
 │   ├── sast_parser.py          # Parse SAST reports (SonarQube)
 │   ├── sca_parser.py           # Parse SCA reports (OWASP Dependency-Check)
 │   ├── dast_parser.py          # Parse DAST reports (OWASP ZAP)
-│   └── unified_parser.py       # Combine all reports into structured format
+│
 │
 ├── policy_generation/
 │   ├── prompt_templates.py     # Prompt engineering templates
