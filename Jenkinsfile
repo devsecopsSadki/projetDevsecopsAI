@@ -23,7 +23,7 @@ pipeline {
                 dir('FetchingData'){
                 script {
                     try {
-                        sh 'mvn clean compile -DskipTests'
+                        sh 'mvn clean package -DskipTests'
                     } catch (Exception e) {
                         echo "Build skipped: ${e.message}"
                     }
