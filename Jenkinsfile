@@ -40,19 +40,33 @@ pipeline {
             steps {
                 script {
                     echo "Running SCA for Maven project..."
+
                     withCredentials([string(credentialsId: 'SNYK_TOKEN', variable: 'SNYK_TOKEN')]) {
+
+                        // 1. Go into the real app directory that has pom.xml
+                        dir('FetchingData') {
+
+                            sh '''
+                                echo "Installing Snyk locally (no sudo needed)..."
+                                npm install snyk
+
+                                echo "Authenticating with Snyk..."
+                                npx snyk auth $SNYK_TOKEN || true
+
+                                echo "Running Snyk test on FetchingData/pom.xml..."
+                                # Save full raw Snyk JSON (all fields)
+                                npx snyk test --file=pom.xml --package-manager=maven --json \
+                                    > ../${REPORTS_DIR}/sca-raw.json || true
+                            '''
+                        }
+
+                        // 2. Back at repo root now.
+                        // Take sca-raw.json and transform it into a clean, readable report.
+                        // If vulnerabilities is missing or null, default to [] so jq won't crash.
                         sh '''
-                            # Install snyk locally (idempotent / safe)
-                            npm install snyk
+                            echo "Post-processing Snyk results with jq..."
+                            cat ${REPORTS_DIR}/sca-raw.json || echo "WARNING: sca-raw.json missing"
 
-                            # Auth (ignore non-zero, we mask anyway)
-                            npx snyk auth $SNYK_TOKEN || true
-
-                            # Run scan to raw JSON (don't fail pipeline if exit code != 0)
-                            npx snyk test --file=pom.xml --package-manager=maven --json \
-                                > ${REPORTS_DIR}/sca-raw.json || true
-
-                            # If .vulnerabilities doesn't exist or is null, create empty array
                             jq '
                                 .vulnerabilities // [] |
                                 map({
@@ -66,17 +80,22 @@ pipeline {
                                         "N/A"
                                     )
                                 })
-                            ' ${REPORTS_DIR}/sca-raw.json > ${REPORTS_DIR}/sca-report.json || echo "[]">{REPORTS_DIR}/sca-report.json
+                            ' ${REPORTS_DIR}/sca-raw.json > ${REPORTS_DIR}/sca-report.json \
+                            || echo "[]" > ${REPORTS_DIR}/sca-report.json
                         '''
                     }
                 }
             }
+
             post {
                 always {
-                    archiveArtifacts artifacts: "${REPORTS_DIR}/sca-report.json", fingerprint: true
+                    // Keep both files so you can inspect them in Jenkins UI after build
+                    archiveArtifacts artifacts: "${REPORTS_DIR}/sca-raw.json, ${REPORTS_DIR}/sca-report.json", fingerprint: true
                 }
             }
         }
+
+
 
 
 
