@@ -46,25 +46,28 @@ pipeline {
 		    '''
 
 		    withCredentials([string(credentialsId: 'SNYK_TOKEN', variable: 'SNYK_TOKEN')]) {
-		        sh '''
-		            # Authenticate Snyk
-		            snyk auth $SNYK_TOKEN
+                sh '''
+                    # Authenticate Snyk (ignore exit errors if already logged in)
+                    npx snyk auth $SNYK_TOKEN || true
 
-		            # Run Snyk scan and generate JSON report
-		            snyk test --file=pom.xml --package-manager=maven --json \
-		              | jq '.vulnerabilities[] | {
-		                  title,
-		                  severity,
-		                  packageName,
-		                  current_version: .version,
-		                  recommended_version: (
-		                    (.fixedIn[0]) // 
-		                    (.upgradePath[-1] | select(. != false)) // 
-		                    "N/A"
-		                  )
-		                }' > ${REPORTS_DIR}/sca-report.json || true
-		        '''
-		    }
+                    # Run Snyk scan and generate JSON report
+                    npx snyk test --file=pom.xml --package-manager=maven --json \
+                    > ${REPORTS_DIR}/sca-raw.json || true
+
+                    # Extract only useful fields using jq
+                    cat ${REPORTS_DIR}/sca-raw.json | jq '.vulnerabilities[] | {
+                        title,
+                        severity,
+                        packageName,
+                        current_version: .version,
+                        recommended_version: (
+                            (.fixedIn[0]) //
+                            (.upgradePath[-1] | select(. != false)) //
+                            "N/A"
+                        )
+                    }' > ${REPORTS_DIR}/sca-report.json || true
+                '''
+            }
 		}
 	    }
 	    post {
