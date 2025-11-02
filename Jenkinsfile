@@ -42,7 +42,7 @@ pipeline {
 		    echo "Running SCA for Maven project..."
 		    sh '''
 		        # Install Snyk if not present
-		        command -v snyk || npm install -g snyk
+		        command -v snyk || npm install snyk
 		    '''
 
 		    withCredentials([string(credentialsId: 'SNYK_TOKEN', variable: 'SNYK_TOKEN')]) {
