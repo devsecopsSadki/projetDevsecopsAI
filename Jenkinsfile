@@ -37,45 +37,46 @@ pipeline {
         }
         
         stage('SCA - Dependency Scan') {
-	    steps {
-		script {
-		    echo "Running SCA for Maven project..."
-		    sh '''
-		        # Install Snyk if not present
-		        command -v snyk || npm install snyk
-		    '''
+            steps {
+                script {
+                    echo "Running SCA for Maven project..."
+                    withCredentials([string(credentialsId: 'SNYK_TOKEN', variable: 'SNYK_TOKEN')]) {
+                        sh '''
+                            # Install snyk locally (idempotent / safe)
+                            npm install snyk
 
-		    withCredentials([string(credentialsId: 'SNYK_TOKEN', variable: 'SNYK_TOKEN')]) {
-                sh '''
-                    # Authenticate Snyk (ignore exit errors if already logged in)
-                    npx snyk auth $SNYK_TOKEN || true
+                            # Auth (ignore non-zero, we mask anyway)
+                            npx snyk auth $SNYK_TOKEN || true
 
-                    # Run Snyk scan and generate JSON report
-                    npx snyk test --file=pom.xml --package-manager=maven --json \
-                    > ${REPORTS_DIR}/sca-raw.json || true
+                            # Run scan to raw JSON (don't fail pipeline if exit code != 0)
+                            npx snyk test --file=pom.xml --package-manager=maven --json \
+                                > ${REPORTS_DIR}/sca-raw.json || true
 
-                    # Extract only useful fields using jq
-                    cat ${REPORTS_DIR}/sca-raw.json | jq '.vulnerabilities[] | {
-                        title,
-                        severity,
-                        packageName,
-                        current_version: .version,
-                        recommended_version: (
-                            (.fixedIn[0]) //
-                            (.upgradePath[-1] | select(. != false)) //
-                            "N/A"
-                        )
-                    }' > ${REPORTS_DIR}/sca-report.json || true
-                '''
+                            # If .vulnerabilities doesn't exist or is null, create empty array
+                            jq '
+                                .vulnerabilities // [] |
+                                map({
+                                    title,
+                                    severity,
+                                    packageName,
+                                    current_version: .version,
+                                    recommended_version: (
+                                        (.fixedIn[0]) //
+                                        (.upgradePath[-1] | select(. != false)) //
+                                        "N/A"
+                                    )
+                                })
+                            ' ${REPORTS_DIR}/sca-raw.json > ${REPORTS_DIR}/sca-report.json || echo "[]">{REPORTS_DIR}/sca-report.json
+                        '''
+                    }
+                }
             }
-		}
-	    }
-	    post {
-		always {
-		    archiveArtifacts artifacts: "${REPORTS_DIR}/sca-report.json", fingerprint: true
-		}
-	    }
-	}
+            post {
+                always {
+                    archiveArtifacts artifacts: "${REPORTS_DIR}/sca-report.json", fingerprint: true
+                }
+            }
+        }
 
 
 
