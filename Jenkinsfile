@@ -1,5 +1,9 @@
 pipeline {
     agent any
+    tools {
+        maven 'maven'
+        
+    }
 
     environment {
         REPORTS_DIR = 'security-reports'
