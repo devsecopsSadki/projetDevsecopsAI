@@ -43,7 +43,7 @@ pipeline {
 
                     withCredentials([string(credentialsId: 'SNYK_TOKEN', variable: 'SNYK_TOKEN')]) {
 
-                        // 1. Go into the real app directory that has pom.xml
+                        // Go into the real app directory that has pom.xml
                         dir('FetchingData') {
 
                             sh '''
@@ -60,38 +60,29 @@ pipeline {
                             '''
                         }
 
-                        // 2. Back at repo root now.
-                        // Take sca-raw.json and transform it into a clean, readable report.
-                        // If vulnerabilities is missing or null, default to [] so jq won't crash.
-                        sh '''
-                            echo "Post-processing Snyk results with jq..."
-                            cat ${REPORTS_DIR}/sca-raw.json || echo "WARNING: sca-raw.json missing"
 
-                            jq '
-                                .vulnerabilities // [] |
-                                map({
-                                    title,
-                                    severity,
-                                    packageName,
-                                    current_version: .version,
-                                    recommended_version: (
-                                        (.fixedIn[0]) //
-                                        (.upgradePath[-1] | select(. != false)) //
-                                        "N/A"
-                                    )
-                                })
-                            ' ${REPORTS_DIR}/sca-raw.json > ${REPORTS_DIR}/sca-report.json \
-                            || echo "[]" > ${REPORTS_DIR}/sca-report.json
-                        '''
                     }
                 }
             }
 
             post {
                 always {
-                    // Keep both files so you can inspect them in Jenkins UI after build
-                    archiveArtifacts artifacts: "${REPORTS_DIR}/sca-raw.json, ${REPORTS_DIR}/sca-report.json", fingerprint: true
+                    archiveArtifacts artifacts: "${REPORTS_DIR}/sca-raw.json", fingerprint: true
                 }
+            }
+        }
+
+        stage('Parse SCA Report') {
+            steps {
+                echo ' Parsing SCA report for LLM...'
+                sh '''
+                    cd parsers
+                    python3 parsca.py \
+                        ../${REPORTS_DIR}/sca-raw.json \
+                        ../${REPORTS_DIR}/sca-findings.txt || echo "SCA parsing skipped (report may be empty)"
+                '''
+
+                echo 'SCA report parsed and ready for LLM'
             }
         }
 
