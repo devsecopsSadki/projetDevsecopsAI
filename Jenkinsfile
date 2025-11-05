@@ -7,6 +7,8 @@ pipeline {
 
     environment {
         REPORTS_DIR = 'security-reports'
+         DOCKER_NET  = 'secnet'
+            APP_PORT    = '8082'
     }
 
     stages {
@@ -165,33 +167,67 @@ pipeline {
             }
         }
 
-        stage('DAST Analysis - ZAP Scan') {
-            steps {
-                echo '🕷️ Running DAST scan with OWASP ZAP...'
-                script {
-                    sh '''
-                        echo "Starting OWASP ZAP scan against http://localhost:8082"
-                        docker run --rm --network host \
-                            -v $(pwd)/${REPORTS_DIR}:/zap/wrk/:rw \
-                            owasp/zap2docker-stable zap-baseline.py \
-                            -t http://localhost:8082 \
-                            -J dast-report.json \
-                            -r dast-report.html || true
+        stage('Start Application') {
+          steps {
+            echo "Starting application on :${APP_PORT}..."
+            dir('FetchingData') {
+              sh '''
+                # Kill leftovers & clean pid
+                pkill -f "java.*jar.*target" || true
+                rm -f app.pid
 
-                        echo "Verifying DAST report was created..."
-                        ls -lh ${REPORTS_DIR}/dast-report.json || echo "WARNING: DAST report not created"
-                    '''
-                }
-                echo 'DAST scan completed'
+                ARTIFACT=$(ls target/*.jar 2>/dev/null | head -n1 || true)
+                if [ -z "$ARTIFACT" ]; then
+                  echo "No jar found in target/. Skipping run."
+                  exit 0
+                fi
+
+                # Run in background on desired port
+                nohup java -jar "$ARTIFACT" --server.port=''' + "${APP_PORT}" + ''' > app.log 2>&1 &
+                echo $! > app.pid
+
+                # Wait (max 30s) for the port to open
+                for i in $(seq 1 30); do
+                  (echo > /dev/tcp/127.0.0.1/''' + "${APP_PORT}" + ''') >/dev/null 2>&1 && { echo "App is up."; exit 0; }
+                  sleep 1
+                done
+                echo "WARNING: app did not open port ''' + "${APP_PORT}" + ''' in time."
+              '''
             }
-            post {
-                always {
-                    archiveArtifacts artifacts: "${REPORTS_DIR}/dast-report.json,${REPORTS_DIR}/dast-report.html",
-                                     fingerprint: true,
-                                     allowEmptyArchive: true
-                }
-            }
+          }
         }
+
+
+        stage('DAST Analysis - ZAP Scan') {
+          steps {
+            echo '🕷️ Running DAST scan with OWASP ZAP...'
+            sh '''
+              echo "Starting OWASP ZAP scan against http://elegant_lichterman:''' + "${APP_PORT}" + '''"
+
+              # Make sure ZAP container can reach Jenkins container over the shared network
+              docker network inspect "''' + "${DOCKER_NET}" + '''" >/dev/null 2>&1 || docker network create "''' + "${DOCKER_NET}" + '''"
+              docker run --rm \
+                --network "''' + "${DOCKER_NET}" + '''" \
+                -v "${WORKSPACE}/''' + "${REPORTS_DIR}" + '''":/zap/wrk/:rw" \
+                owasp/zap2docker-stable zap-baseline.py \
+                -t "http://elegant_lichterman:''' + "${APP_PORT}" + '''" \
+                -J dast-report.json \
+                -r dast-report.html || true
+
+              echo "Verifying DAST report was created..."
+              ls -lh "${WORKSPACE}/''' + "${REPORTS_DIR}" + '''/dast-report.json" || echo "WARNING: DAST report not created"
+            '''
+            echo 'DAST scan completed'
+          }
+          post {
+            always {
+              archiveArtifacts artifacts: "${REPORTS_DIR}/dast-report.json,${REPORTS_DIR}/dast-report.html",
+                               fingerprint: true,
+                               allowEmptyArchive: true
+            }
+          }
+        }
+
 
         stage('Stop Application') {
             steps {
