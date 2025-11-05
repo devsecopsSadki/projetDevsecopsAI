@@ -1,212 +1,235 @@
-from typing import List, Dict, Any
+"""
+prompt_templates.py
+Hybrid NIST CSF + ISO 27001 policy templates
+"""
 
+SYSTEM_PROMPT = """You are a cybersecurity expert specialized in NIST Cybersecurity Framework and ISO 27001 standards.
+Generate comprehensive security policies that combine the best of both frameworks:
+- NIST CSF's 5 functions (Identify, Protect, Detect, Respond, Recover)
+- ISO 27001's risk-based approach and control domains
 
-class PromptTemplates:
-    """Templates for generating security policies from vulnerability reports"""
-    
-    @staticmethod
-    def get_system_prompt() -> str:
-        """Base system prompt for the LLM"""
-        return """You are a cybersecurity expert specialized in writing security policies and remediation guidelines. 
-Your task is to analyze vulnerability reports and generate clear, actionable security policies that align with 
-industry standards like NIST Cybersecurity Framework and ISO 27001.
+Output valid JSON only. Be specific and actionable."""
 
-Generate policies that are:
-- Clear and actionable
-- Aligned with security best practices
-- Specific to the identified vulnerabilities
-- Include severity-based prioritization
-- Provide concrete remediation steps"""
+SAST_TEMPLATE = """Generate a comprehensive SAST security policy using NIST CSF + ISO 27001 approach.
 
-    @staticmethod
-    def generate_sast_policy_prompt(findings: List[Dict[str, Any]]) -> str:
-        """Generate prompt for SAST findings"""
-        findings_summary = PromptTemplates._summarize_findings(findings, "SAST")
-        
-        return f"""Based on the following Static Application Security Testing (SAST) findings, generate a comprehensive security policy document:
+FINDINGS SUMMARY:
+- Total: {findings_count}
+- Critical: {critical} | High: {high} | Medium: {medium} | Low: {low}
 
-{findings_summary}
+TOP CODE VULNERABILITIES:
+{findings_list}
 
-Generate a security policy that includes:
-1. Executive Summary: Overview of code security posture
-2. Risk Assessment: Categorize findings by severity (Critical, High, Medium, Low)
-3. Security Controls: Specific controls to address each vulnerability type
-4. Remediation Guidelines: Step-by-step fixes for each issue category
-5. Timeline: Prioritized remediation schedule based on severity
-6. Compliance Mapping: Map findings to NIST CSF or ISO 27001 controls where applicable
-
-Format the policy in JSON with the following structure:
+OUTPUT JSON STRUCTURE:
 {{
-  "policy_type": "SAST Security Policy",
-  "generated_date": "YYYY-MM-DD",
-  "executive_summary": "...",
+  "policy_type": "SAST",
+  "executive_summary": "2-3 sentences on overall code security posture and key risks",
+  "scope": "Application source code security analysis",
+  "objectives": ["objective 1", "objective 2", "objective 3"],
+  
   "risk_assessment": {{
-    "critical": [...],
-    "high": [...],
-    "medium": [...],
-    "low": [...]
+    "overall_risk_level": "Critical|High|Medium|Low",
+    "critical_count": {critical},
+    "high_count": {high},
+    "medium_count": {medium},
+    "low_count": {low},
+    "business_impact": "Description of potential business impact",
+    "likelihood": "High|Medium|Low - likelihood of exploitation"
   }},
-  "security_controls": [...],
-  "remediation_guidelines": [...],
-  "timeline": {{...}},
-  "compliance_mapping": {{...}}
+  
+  "total_findings": {findings_count},
+  "vulnerability_categories": ["SQL Injection", "XSS", "Hardcoded Secrets", "..."],
+  
+  "security_controls": [
+    {{
+      "control_id": "SC-001",
+      "nist_function": "Protect",
+      "iso_domain": "A.14 System Development",
+      "title": "Input Validation Framework",
+      "description": "Implement comprehensive input validation",
+      "implementation_steps": ["step 1", "step 2", "step 3"]
+    }}
+  ],
+  
+  "remediation_actions": [
+    {{
+      "priority": "P0",
+      "title": "Fix critical SQL injection vulnerabilities",
+      "affected_assets": ["auth module", "user API"],
+      "timeline": "Immediate (0-7 days)",
+      "owner": "Backend Team",
+      "success_criteria": "All SQL queries use parameterized statements"
+    }}
+  ],
+  
+  "compliance_mapping": {{
+    "nist_csf_categories": ["PR.DS-5", "PR.IP-1", "DE.CM-4"],
+    "iso27001_controls": ["A.14.2.1", "A.14.2.5", "A.12.6.1"]
+  }},
+  
+  "monitoring_requirements": ["Code scanning in CI/CD", "Weekly SAST scans", "Security code reviews"],
+  "review_schedule": "Quarterly policy review and annual audit"
 }}"""
 
-    @staticmethod
-    def generate_sca_policy_prompt(findings: List[Dict[str, Any]]) -> str:
-        """Generate prompt for SCA findings"""
-        findings_summary = PromptTemplates._summarize_findings(findings, "SCA")
-        
-        return f"""Based on the following Software Composition Analysis (SCA) findings, generate a comprehensive dependency security policy:
+SCA_TEMPLATE = """Generate a comprehensive SCA security policy using NIST CSF + ISO 27001 approach.
 
-{findings_summary}
+DEPENDENCY VULNERABILITIES:
+- Total: {findings_count}
+- Critical: {critical} | High: {high} | Medium: {medium} | Low: {low}
 
-Generate a security policy that includes:
-1. Executive Summary: Overview of dependency security risks
-2. Vulnerable Dependencies: List of packages with known vulnerabilities (CVE, CVSS scores)
-3. Risk Assessment: Impact analysis of each vulnerable dependency
-4. Update Strategy: Prioritized plan for updating or replacing dependencies
-5. Patch Management: Process for ongoing dependency monitoring
-6. Supply Chain Security: Guidelines for vetting new dependencies
-7. Compliance Requirements: Align with NIST CSF or ISO 27001 standards
+VULNERABLE DEPENDENCIES:
+{findings_list}
 
-Format the policy in JSON with clear sections for each component."""
+OUTPUT JSON STRUCTURE:
+{{
+  "policy_type": "SCA",
+  "executive_summary": "2-3 sentences on dependency security posture and supply chain risks",
+  "scope": "Third-party dependency and supply chain security",
+  "objectives": ["objective 1", "objective 2", "objective 3"],
+  
+  "risk_assessment": {{
+    "overall_risk_level": "Critical|High|Medium|Low",
+    "critical_count": {critical},
+    "high_count": {high},
+    "medium_count": {medium},
+    "low_count": {low},
+    "business_impact": "Impact of vulnerable dependencies",
+    "likelihood": "High|Medium|Low"
+  }},
+  
+  "total_findings": {findings_count},
+  "vulnerability_categories": ["Outdated packages with CVEs", "Known malicious packages", "..."],
+  
+  "security_controls": [
+    {{
+      "control_id": "SC-SCA-001",
+      "nist_function": "Identify",
+      "iso_domain": "A.15 Supplier Relationships",
+      "title": "Dependency Inventory Management",
+      "description": "Maintain comprehensive SBOM",
+      "implementation_steps": ["step 1", "step 2", "step 3"]
+    }}
+  ],
+  
+  "remediation_actions": [
+    {{
+      "priority": "P0",
+      "title": "Update critical vulnerable dependencies",
+      "affected_assets": ["package1@version", "package2@version"],
+      "timeline": "Immediate (0-7 days)",
+      "owner": "DevOps Team",
+      "success_criteria": "All critical CVEs patched"
+    }}
+  ],
+  
+  "compliance_mapping": {{
+    "nist_csf_categories": ["ID.AM-2", "PR.IP-12", "DE.CM-8"],
+    "iso27001_controls": ["A.15.1.1", "A.15.1.2", "A.12.6.1"]
+  }},
+  
+  "monitoring_requirements": ["Daily dependency scanning", "CVE monitoring", "License compliance checks"],
+  "review_schedule": "Monthly dependency review and quarterly audit"
+}}"""
 
-    @staticmethod
-    def generate_dast_policy_prompt(findings: List[Dict[str, Any]]) -> str:
-        """Generate prompt for DAST findings"""
-        findings_summary = PromptTemplates._summarize_findings(findings, "DAST")
-        
-        return f"""Based on the following Dynamic Application Security Testing (DAST) findings, generate a comprehensive runtime security policy:
+DAST_TEMPLATE = """Generate a comprehensive DAST security policy using NIST CSF + ISO 27001 approach.
 
-{findings_summary}
+RUNTIME VULNERABILITIES:
+- Total: {findings_count}
+- Critical: {critical} | High: {high} | Medium: {medium} | Low: {low}
 
-Generate a security policy that includes:
-1. Executive Summary: Overview of runtime vulnerabilities
-2. Vulnerability Assessment: Analysis of each finding (OWASP Top 10 mapping)
-3. Configuration Hardening: Server and application configuration recommendations
-4. Security Headers: Required HTTP security headers
-5. Input Validation: Recommendations for preventing injection attacks
-6. Authentication & Authorization: Access control improvements
-7. Monitoring & Detection: Runtime security monitoring requirements
-8. Incident Response: Steps for addressing exploited vulnerabilities
+RUNTIME SECURITY ISSUES:
+{findings_list}
 
-Format the policy in JSON with actionable recommendations for each finding."""
+OUTPUT JSON STRUCTURE:
+{{
+  "policy_type": "DAST",
+  "executive_summary": "2-3 sentences on runtime security posture and exposure risks",
+  "scope": "Runtime application security and infrastructure",
+  "objectives": ["objective 1", "objective 2", "objective 3"],
+  
+  "risk_assessment": {{
+    "overall_risk_level": "Critical|High|Medium|Low",
+    "critical_count": {critical},
+    "high_count": {high},
+    "medium_count": {medium},
+    "low_count": {low},
+    "business_impact": "Impact of runtime vulnerabilities if exploited",
+    "likelihood": "High|Medium|Low"
+  }},
+  
+  "total_findings": {findings_count},
+  "vulnerability_categories": ["Missing security headers", "Authentication flaws", "OWASP Top 10 issues", "..."],
+  
+  "security_controls": [
+    {{
+      "control_id": "SC-DAST-001",
+      "nist_function": "Protect",
+      "iso_domain": "A.13 Communications Security",
+      "title": "Security Headers Implementation",
+      "description": "Implement all required HTTP security headers",
+      "implementation_steps": ["step 1", "step 2", "step 3"]
+    }}
+  ],
+  
+  "remediation_actions": [
+    {{
+      "priority": "P0",
+      "title": "Fix critical authentication bypass",
+      "affected_assets": ["/api/admin", "/api/user"],
+      "timeline": "Immediate (0-7 days)",
+      "owner": "Security Team",
+      "success_criteria": "Authentication required for all protected endpoints"
+    }}
+  ],
+  
+  "compliance_mapping": {{
+    "nist_csf_categories": ["PR.AC-1", "PR.DS-2", "DE.CM-1"],
+    "iso27001_controls": ["A.9.1.1", "A.13.1.1", "A.18.1.3"]
+  }},
+  
+  "monitoring_requirements": ["Runtime security monitoring", "Weekly DAST scans", "WAF rule updates"],
+  "review_schedule": "Monthly review and quarterly penetration testing"
+}}"""
 
-    @staticmethod
-    def generate_unified_policy_prompt(
-        sast_findings: List[Dict[str, Any]],
-        sca_findings: List[Dict[str, Any]],
-        dast_findings: List[Dict[str, Any]]
-    ) -> str:
-        """Generate comprehensive policy from all scan types"""
-        
-        sast_summary = PromptTemplates._summarize_findings(sast_findings, "SAST") if sast_findings else "No SAST findings."
-        sca_summary = PromptTemplates._summarize_findings(sca_findings, "SCA") if sca_findings else "No SCA findings."
-        dast_summary = PromptTemplates._summarize_findings(dast_findings, "DAST") if dast_findings else "No DAST findings."
-        
-        return f"""Based on comprehensive security testing results (SAST, SCA, DAST), generate a unified application security policy:
 
-=== STATIC CODE ANALYSIS (SAST) ===
-{sast_summary}
-
-=== DEPENDENCY ANALYSIS (SCA) ===
-{sca_summary}
-
-=== RUNTIME TESTING (DAST) ===
-{dast_summary}
-
-Generate a comprehensive, unified security policy that includes:
-
-1. EXECUTIVE SUMMARY
-   - Overall security posture
-   - Critical risks requiring immediate attention
-   - High-level remediation roadmap
-
-2. RISK ASSESSMENT
-   - Consolidated risk ranking across all scan types
-   - Attack surface analysis
-   - Business impact assessment
-
-3. SECURITY CONTROLS (organized by NIST CSF functions)
-   - Identify: Asset management, risk assessment
-   - Protect: Access control, data security, protective technology
-   - Detect: Continuous monitoring, detection processes
-   - Respond: Incident response planning
-   - Recover: Recovery planning, improvements
-
-4. REMEDIATION ROADMAP
-   - Phase 1 (Immediate - 0-30 days): Critical and high severity
-   - Phase 2 (Short-term - 30-90 days): Medium severity
-   - Phase 3 (Long-term - 90+ days): Low severity, technical debt
-
-5. COMPLIANCE MAPPING
-   - Map findings to NIST CSF categories
-   - Map findings to ISO 27001 controls
-   - Identify compliance gaps
-
-6. ONGOING SECURITY PRACTICES
-   - Secure development lifecycle integration
-   - Continuous monitoring and scanning
-   - Security training requirements
-   - Dependency management process
-
-Format as a well-structured JSON document with clear, actionable guidance."""
-
-    @staticmethod
-    def _summarize_findings(findings: List[Dict[str, Any]], scan_type: str) -> str:
-        """Create a concise summary of findings for the prompt"""
-        if not findings:
-            return f"No {scan_type} findings detected."
-        
-        summary_lines = [f"Total {scan_type} Findings: {len(findings)}\n"]
-        
-        # Group by severity
-        by_severity = {}
-        for finding in findings:
-            severity = finding.get('severity', 'UNKNOWN').upper()
-            if severity not in by_severity:
-                by_severity[severity] = []
-            by_severity[severity].append(finding)
-        
-        # Summarize each severity level
-        for severity in ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'UNKNOWN']:
-            if severity in by_severity:
-                items = by_severity[severity]
-                summary_lines.append(f"\n{severity} Severity ({len(items)} findings):")
-                
-                # Show first 5 of each severity
-                for i, item in enumerate(items[:5], 1):
-                    title = item.get('title', 'Unknown')
-                    location = item.get('location', 'N/A')
-                    summary_lines.append(f"  {i}. {title}")
-                    summary_lines.append(f"     Location: {location}")
-                    
-                    if scan_type == "SCA":
-                        cve = item.get('cve', 'N/A')
-                        cvss = item.get('cvss', 'N/A')
-                        summary_lines.append(f"     CVE: {cve}, CVSS: {cvss}")
-                
-                if len(items) > 5:
-                    summary_lines.append(f"  ... and {len(items) - 5} more {severity} findings")
-        
-        return "\n".join(summary_lines)
-
-    @staticmethod
-    def get_refinement_prompt(initial_policy: str, feedback: str) -> str:
-        """Generate prompt for refining/improving a policy based on feedback"""
-        return f"""Review and refine the following security policy based on the feedback provided:
-
-=== CURRENT POLICY ===
-{initial_policy}
-
-=== FEEDBACK/REQUIREMENTS ===
-{feedback}
-
-Generate an improved version of the policy that addresses the feedback while maintaining:
-- Technical accuracy
-- Actionable recommendations
-- Alignment with security standards
-- Clear structure and readability
-
-Return the refined policy in the same JSON format."""
+def build_prompt(findings, policy_type):
+    """Build hybrid NIST + ISO policy prompt"""
+    
+    # Count severities
+    counts = {'critical': 0, 'high': 0, 'medium': 0, 'low': 0}
+    for f in findings:
+        sev = f.get('severity', '').upper()
+        if sev == 'CRITICAL':
+            counts['critical'] += 1
+        elif sev == 'HIGH':
+            counts['high'] += 1
+        elif sev == 'MEDIUM':
+            counts['medium'] += 1
+        elif sev == 'LOW':
+            counts['low'] += 1
+    
+    # Format top findings
+    findings_list = []
+    for i, f in enumerate(findings[:15], 1):
+        findings_list.append(
+            f"{i}. [{f.get('severity', 'N/A')}] {f.get('title', 'Unknown')}\n"
+            f"   Location: {f.get('location', 'N/A')}\n"
+            f"   Recommendation: {f.get('recommendation', 'Review and fix')}"
+        )
+    
+    # Select template
+    templates = {
+        'SAST': SAST_TEMPLATE,
+        'SCA': SCA_TEMPLATE,
+        'DAST': DAST_TEMPLATE
+    }
+    
+    template = templates.get(policy_type, SAST_TEMPLATE)
+    
+    return template.format(
+        findings_count=len(findings),
+        critical=counts['critical'],
+        high=counts['high'],
+        medium=counts['medium'],
+        low=counts['low'],
+        findings_list='\n\n'.join(findings_list)
+    )
