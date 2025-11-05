@@ -107,33 +107,49 @@ pipeline {
 
         stage('SAST Analysis') {
             steps {
-                echo ' Running SonarQube SAST Scan...'
+                echo '🔍 Running SonarQube SAST Scan...'
 
                 script {
+                    // Explicitly set SonarQube URL if needed
                     withSonarQubeEnv('SonarQube') {
                         sh """
                             sonar-scanner \
                                 -Dsonar.projectKey=my-project \
+                                -Dsonar.projectName="My Project" \
+                                -Dsonar.projectVersion=${BUILD_NUMBER} \
                                 -Dsonar.sources=FetchingData/src \
-                                -Dsonar.java.binaries=FetchingData/target/classes
+                                -Dsonar.java.binaries=FetchingData/target/classes \
+                                -Dsonar.sourceEncoding=UTF-8 \
+                                -Dsonar.host.url=http://localhost:9090
                         """
                     }
                 }
 
-                echo ' Exporting SonarQube results to JSON...'
+                echo '⏳ Waiting for Quality Gate...'
                 script {
-                    withSonarQubeEnv('SonarQube') {
-                        sh """
-                            curl -u \${SONAR_AUTH_TOKEN}: \
-                                "\${SONAR_HOST_URL}/api/issues/search?componentKeys=my-project&ps=500" \
-                                -o ${REPORTS_DIR}/sast-report.json
-                        """
+                    timeout(time: 5, unit: 'MINUTES') {
+                        def qg = waitForQualityGate()
+                        if (qg.status != 'OK') {
+                            echo "⚠️  Quality Gate failed: ${qg.status}"
+                        } else {
+                            echo '✅ Quality Gate passed'
+                        }
                     }
                 }
 
-                echo ' SAST scan completed'
+                echo '📥 Exporting SonarQube results to JSON...'
+                script {
+                    sh """
+                        curl -u ${SONAR_AUTH_TOKEN}: \
+                            "http://localhost:9090/api/issues/search?componentKeys=my-project&resolved=false&ps=500" \
+                            -o ${REPORTS_DIR}/sast-report.json
+                    """
+                }
+
+                echo '✅ SAST scan completed'
             }
         }
+
 
         stage('Parse SAST Report') {
             steps {
