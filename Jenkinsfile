@@ -147,7 +147,6 @@ pipeline {
                 echo 'Parsing SAST report for LLM...'
                 
                 script {
-                    // Use your custom parser at parsers/sast/parsast.py
                     sh """
                         python3 parsers/sast/parsast.py \
                             ${REPORTS_DIR}/sast-report.json \
@@ -166,66 +165,37 @@ pipeline {
             }
         }
 
-        stage('Start Application for DAST') {
-            steps {
-                echo ' Starting application for DAST scanning...'
-                dir('FetchingData') {
-                    script {
-                        sh '''
-                            echo "Starting Spring Boot application..."
-                            nohup java -jar target/*.jar > app.log 2>&1 &
-                            echo $! > app.pid
-                            echo "Application PID: $(cat app.pid)"
-                        '''
-                        
-                        // Wait for application to be ready
-                        sh '''
-                            echo "Waiting for application to start..."
-                            for i in {1..60}; do
-                                if curl -f http://localhost:8082/actuator/health 2>/dev/null; then
-                                    echo "✓ Application is ready and responding!"
-                                    break
-                                fi
-                                if [ $i -eq 60 ]; then
-                                    echo "✗ Application failed to start within 120 seconds"
-                                    exit 1
-                                fi
-                                echo "  Waiting... (${i}/60)"
-                                sleep 2
-                            done
-                        '''
-                    }
-                }
-            }
-        }
-
         stage('DAST Analysis - ZAP Scan') {
             steps {
-                echo ' Running DAST scan with OWASP ZAP...'
+                echo '🕷️ Running DAST scan with OWASP ZAP...'
                 script {
                     sh '''
                         echo "Starting OWASP ZAP scan against http://localhost:8082"
-                        docker run --rm --network host \\
-                            -v $(pwd)/${REPORTS_DIR}:/zap/wrk/:rw \\
-                            owasp/zap2docker-stable zap-baseline.py \\
-                            -t http://localhost:8082 \\
-                            -J \\
-                            -j \\
-                            -r ${REPORTS_DIR}/dast-report.json || true
+                        docker run --rm --network host \
+                            -v $(pwd)/${REPORTS_DIR}:/zap/wrk/:rw \
+                            owasp/zap2docker-stable zap-baseline.py \
+                            -t http://localhost:8082 \
+                            -J dast-report.json \
+                            -r dast-report.html || true
+
+                        echo "Verifying DAST report was created..."
+                        ls -lh ${REPORTS_DIR}/dast-report.json || echo "WARNING: DAST report not created"
                     '''
                 }
-                echo ' DAST scan completed'
+                echo 'DAST scan completed'
             }
             post {
                 always {
-                    archiveArtifacts artifacts: "${REPORTS_DIR}/dast-report.json", allowEmptyArchive: true
+                    archiveArtifacts artifacts: "${REPORTS_DIR}/dast-report.json,${REPORTS_DIR}/dast-report.html",
+                                     fingerprint: true,
+                                     allowEmptyArchive: true
                 }
             }
         }
 
         stage('Stop Application') {
             steps {
-                echo ' Stopping application...'
+                echo '🛑 Stopping application...'
                 dir('FetchingData') {
                     script {
                         sh '''
@@ -248,14 +218,29 @@ pipeline {
         stage('Parse DAST Report') {
             steps {
                 echo ' Parsing DAST report for LLM...'
-                sh '''
-                    cd parsers
-                    python3 pardast.py \
-                        ../${REPORTS_DIR}/dast-report.json \
-                        ../${REPORTS_DIR}/dast-findings.txt || echo "DAST parsing skipped (report may be empty)"
-                '''
+                script {
+                    sh '''
+                        if [ -f "${REPORTS_DIR}/dast-report.json" ]; then
+                            echo "DAST report file found, parsing..."
+                            cd parsers/dast
+                            python3 pardast.py \
+                                ../../${REPORTS_DIR}/dast-report.json \
+                                ../../${REPORTS_DIR}/dast-findings.txt
+                        else
+                            echo "WARNING: dast-report.json not found, skipping parsing"
+                            echo "No DAST findings to report." > ${REPORTS_DIR}/dast-findings.txt
+                        fi
+                    '''
+                }
 
                 echo 'DAST report parsed and ready for LLM'
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: "${REPORTS_DIR}/dast-findings.txt",
+                                     fingerprint: true,
+                                     allowEmptyArchive: true
+                }
             }
         }
 
