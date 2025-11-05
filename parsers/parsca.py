@@ -62,14 +62,14 @@ def get_fixed_version(vuln):
 def format_sca_simple(v, idx):
     """Format a single SCA vulnerability in simplified format."""
     severity_emoji = {
-        'CRITICAL': '🔴',
-        'HIGH': '🟠',
-        'MEDIUM': '🟡',
-        'LOW': '🔵',
-        'UNKNOWN': '⚪'
+        'CRITICAL': '****',
+        'HIGH': '***',
+        'MEDIUM': '**',
+        'LOW': '*',
+        'UNKNOWN': '-'
     }
     
-    emoji = severity_emoji.get(v['severity'], '⚪')
+    emoji = severity_emoji.get(v['severity'], '-')
     cvss_str = f"{v['cvss']}" if v['cvss'] is not None else 'N/A'
     
     text = (
@@ -96,10 +96,10 @@ def generate_summary(vulns):
     summary += "SECURITY VULNERABILITIES SUMMARY\n"
     summary += "=" * 60 + "\n"
     summary += f"Total Vulnerabilities: {len(vulns)}\n"
-    summary += f"  🔴 Critical: {severity_counts['CRITICAL']}\n"
-    summary += f"  🟠 High: {severity_counts['HIGH']}\n"
-    summary += f"  🟡 Medium: {severity_counts['MEDIUM']}\n"
-    summary += f"  🔵 Low: {severity_counts['LOW']}\n"
+    summary += f"  **** Critical: {severity_counts['CRITICAL']}\n"
+    summary += f"  *** High: {severity_counts['HIGH']}\n"
+    summary += f"  ** Medium: {severity_counts['MEDIUM']}\n"
+    summary += f"  * Low: {severity_counts['LOW']}\n"
     summary += "=" * 60 + "\n\n"
     
     return summary
