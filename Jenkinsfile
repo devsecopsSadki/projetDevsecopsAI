@@ -135,16 +135,27 @@ pipeline {
             }
         }
 
-        stage('Parse SAST Report') {
+       stage('Parse SAST Report') {
             steps {
-                echo ' Parsing SAST report for LLM...'
-                sh '''
-                    python3 scripts/parser_sast_llm.py \
-                        ${REPORTS_DIR}/sast-report.json \
-                        ${REPORTS_DIR}/sast-findings.txt
-                '''
+                echo 'Parsing SAST report for LLM...'
+                
+                script {
+                    // Use your custom parser at parsers/sast/parsast.py
+                    sh """
+                        python3 parsers/sast/parsast.py \
+                            ${REPORTS_DIR}/sast-report.json \
+                            ${REPORTS_DIR}/sast-findings.txt
+                    """
+                }
 
-                echo 'Report parsed and ready for LLM'
+                echo ' Report parsed and ready for LLM'
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: "${REPORTS_DIR}/sast-findings.txt", 
+                                     allowEmptyArchive: true, 
+                                     fingerprint: true
+                }
             }
         }
 
