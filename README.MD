@@ -28,9 +28,9 @@ your-project/
 │
 ├── security-reports/               # Generated reports (gitignored)
 │   ├── raw/
-│   │   ├── sast-report.json
-│   │   ├── sca-report.json
-│   │   └── dast-report.xml
+│   │   ├── sast_summary.txt
+│   │   ├── sca_summary.txt
+│   │   └── dast_summary.txt
 │   ├── parsed/
 │   │   └── unified-findings.json   # Preprocessed for LLM
 │   └── policies/
