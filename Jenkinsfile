@@ -133,6 +133,13 @@ pipeline {
 
                 echo ' SAST scan completed'
             }
+            post {
+                always {
+                    archiveArtifacts artifacts: "${REPORTS_DIR}/sast-raw.json", 
+                                     fingerprint: true, 
+                                     allowEmptyArchive: true
+                }
+            }
         }
 
        stage('Parse SAST Report') {
