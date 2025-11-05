@@ -54,20 +54,22 @@ pipeline {
                                 npx snyk auth $SNYK_TOKEN || true
 
                                 echo "Running Snyk test on FetchingData/pom.xml..."
-                                # Save full raw Snyk JSON (all fields)
+                                # Save full raw Snyk JSON to the reports directory
+                                # Using absolute path from workspace root
                                 npx snyk test --file=pom.xml --package-manager=maven --json \
-                                    > ../${REPORTS_DIR}/sca-raw.json || true
+                                    > ../security-reports/sca-raw.json 2>&1 || true
+                                
+                                echo "Verifying report was created..."
+                                ls -lh ../security-reports/sca-raw.json || echo "WARNING: Report file not created"
                             '''
                         }
-
-
                     }
                 }
             }
 
             post {
                 always {
-                    archiveArtifacts artifacts: "${REPORTS_DIR}/sca-raw.json", fingerprint: true
+                    archiveArtifacts artifacts: "${REPORTS_DIR}/sca-raw.json", fingerprint: true, allowEmptyArchive: true
                 }
             }
         }
@@ -76,13 +78,26 @@ pipeline {
             steps {
                 echo ' Parsing SCA report for LLM...'
                 sh '''
-                    cd parsers
-                    python3 parsca.py \
-                        ../${REPORTS_DIR}/sca-raw.json \
-                        ../${REPORTS_DIR}/sca-findings.txt || echo "SCA parsing skipped (report may be empty)"
+                    # Verify report exists before parsing
+                    if [ -f "${REPORTS_DIR}/sca-raw.json" ]; then
+                        echo "Report file found, parsing..."
+                        cd parsers
+                        python3 parsca.py \
+                            ../${REPORTS_DIR}/sca-raw.json \
+                            ../${REPORTS_DIR}/sca-findings.txt
+                    else
+                        echo "ERROR: sca-raw.json not found, skipping parsing"
+                        exit 1
+                    fi
                 '''
 
                 echo 'SCA report parsed and ready for LLM'
+            }
+            
+            post {
+                always {
+                    archiveArtifacts artifacts: "${REPORTS_DIR}/sca-findings.txt", fingerprint: true, allowEmptyArchive: true
+                }
             }
         }
 
