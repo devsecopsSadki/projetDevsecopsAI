@@ -1,0 +1,14 @@
+Title: SQL Injection in login form
+Severity: HIGH
+Description: User input in the username field is not sanitized before database query.
+File: src/controllers/LoginController.java
+
+Title: Hardcoded credentials
+Severity: CRITICAL
+Description: API key is hardcoded in config file.
+File: config/settings.py
+
+Title: Unused import statements
+Severity: LOW
+Description: Minor code cleanup issue.
+File: src/utils/helpers.py

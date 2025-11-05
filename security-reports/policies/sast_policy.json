@@ -1,0 +1,143 @@
+{
+  "metadata": {
+    "policy_id": "POL-SAST-2025-001",
+    "policy_name": "Static Application Security Testing (SAST) Policy",
+    "version": "1.0",
+    "status": "Draft",
+    "created_date": "2025-11-05T00:00:00Z",
+    "last_updated": "2025-11-05T00:00:00Z",
+    "next_review_date": "2026-02-05",
+    "author": "Security Policy Generator",
+    "approved_by": null,
+    "department": "Information Security",
+    "classification": "Internal"
+  },
+  "policy_statement": {
+    "purpose": "To establish standards for identifying and remediating source code vulnerabilities through static analysis.",
+    "description": "This policy defines requirements for SAST implementation, vulnerability management, and secure code development practices.",
+    "applicability": "All development teams and applications with custom source code.",
+    "enforcement": "Mandatory SAST scans in CI/CD pipeline with quality gates.",
+    "exceptions": "Legacy applications may request temporary exemptions through the Security Review Board."
+  },
+  "policy_type": "SAST",
+  "executive_summary": "The current code base contains a critical hard‑coded credential and a high‑severity SQL injection risk, indicating an immediate need for stronger secure‑coding controls. By embedding automated SAST into the CI/CD pipeline and enforcing remediation timelines, the organization will reduce exploitation likelihood and protect sensitive data.",
+  "scope": "Application source code security analysis for all internally developed and third‑party integrated software components.",
+  "objectives": [
+    "Integrate automated SAST tools into every build pipeline and enforce pass/fail gates.",
+    "Ensure timely remediation of identified vulnerabilities based on risk ranking.",
+    "Establish continuous monitoring and reporting to maintain compliance with NIST CSF and ISO 27001."
+  ],
+  "risk_assessment": {
+    "overall_risk_level": "Critical",
+    "critical_count": 1,
+    "high_count": 1,
+    "medium_count": 0,
+    "low_count": 1,
+    "business_impact": "Exploitation of hard‑coded credentials could lead to full system compromise, while SQL injection may expose customer data, resulting in regulatory fines, loss of reputation, and operational disruption.",
+    "likelihood": "High"
+  },
+  "total_findings": 3,
+  "vulnerability_categories": [
+    "SQL Injection",
+    "Hardcoded Secrets",
+    "Unused Code"
+  ],
+  "security_controls": [
+    {
+      "control_id": "SC-001",
+      "nist_function": "Protect",
+      "iso_domain": "A.14 System Development",
+      "title": "Input Validation Framework",
+      "description": "Implement a centralized input validation library that enforces allow‑list validation for all external data.",
+      "implementation_steps": [
+        "Select a vetted validation library (e.g., OWASP ESAPI).",
+        "Integrate the library into all entry‑point modules.",
+        "Enforce use of prepared statements for database access.",
+        "Add unit tests that verify validation logic for each API."
+      ]
+    },
+    {
+      "control_id": "SC-002",
+      "nist_function": "Protect",
+      "iso_domain": "A.14 System Development",
+      "title": "Secret Management",
+      "description": "Remove hard‑coded secrets from source code and store them in a centralized secret vault.",
+      "implementation_steps": [
+        "Identify all hard‑coded credentials using automated search patterns.",
+        "Migrate secrets to a vault solution (e.g., HashiCorp Vault, Azure Key Vault).",
+        "Update application code to retrieve secrets at runtime via secure APIs.",
+        "Restrict vault access using role‑based access control and audit logging."
+      ]
+    },
+    {
+      "control_id": "SC-003",
+      "nist_function": "Detect",
+      "iso_domain": "A.12 Operations Security",
+      "title": "Continuous SAST Monitoring",
+      "description": "Run static analysis on every code commit and generate actionable findings.",
+      "implementation_steps": [
+        "Configure SAST tool (e.g., SonarQube, Checkmarx) to scan on pull‑request creation.",
+        "Define quality gates: block merge on any Critical or High findings.",
+        "Export scan results to the ticketing system for tracking.",
+        "Review and tune rule sets quarterly to reduce false positives."
+      ]
+    }
+  ],
+  "remediation_actions": [
+    {
+      "priority": "P0",
+      "title": "Eliminate hard‑coded credentials in config/settings.py",
+      "affected_assets": [
+        "Configuration module",
+        "Deployment scripts"
+      ],
+      "timeline": "Immediate (0‑7 days)",
+      "owner": "Backend Team",
+      "success_criteria": "No hard‑coded secrets remain; application retrieves credentials from approved secret vault."
+    },
+    {
+      "priority": "P1",
+      "title": "Fix SQL Injection vulnerability in src/controllers/LoginController.java",
+      "affected_assets": [
+        "Authentication service",
+        "User login API"
+      ],
+      "timeline": "Within 14 days",
+      "owner": "Backend Team",
+      "success_criteria": "All database interactions use parameterized queries or ORM methods; static scan shows no SQL injection findings."
+    },
+    {
+      "priority": "P2",
+      "title": "Remove unused import statements in src/utils/helpers.py",
+      "affected_assets": [
+        "Utility library"
+      ],
+      "timeline": "Within 30 days",
+      "owner": "Frontend Team",
+      "success_criteria": "Code base contains no unused imports; linting tool reports zero warnings."
+    }
+  ],
+  "compliance_mapping": {
+    "nist_csf_categories": [
+      "PR.DS-5",
+      "PR.IP-1",
+      "DE.CM-4",
+      "RS.RP-1",
+      "RC.RM-1"
+    ],
+    "iso27001_controls": [
+      "A.14.2.1",
+      "A.14.2.5",
+      "A.12.6.1",
+      "A.16.1.2",
+      "A.18.2.3"
+    ]
+  },
+  "monitoring_requirements": [
+    "Automated SAST scans triggered on every commit and nightly full scans.",
+    "Weekly dashboard review of open SAST findings by the Application Security Lead.",
+    "Quarterly security code review sessions with peer developers.",
+    "Integration of scan results with the SIEM for trend analysis."
+  ],
+  "review_schedule": "Quarterly policy review and annual audit"
+}

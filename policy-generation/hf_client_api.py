@@ -72,9 +72,3 @@ class HuggingFaceClient:
             logger.debug("No valid JSON found in model output.")
         return None
 
-
-if __name__ == "__main__":
-    # Example usage
-    client = HuggingFaceClient()
-    result = client.generate("List 3 benefits of using containerization in DevOps.")
-    print(result["text"])

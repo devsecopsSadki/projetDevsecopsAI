@@ -19,8 +19,30 @@ FINDINGS SUMMARY:
 TOP CODE VULNERABILITIES:
 {findings_list}
 
-OUTPUT JSON STRUCTURE:
+OUTPUT JSON STRUCTURE (MUST INCLUDE ALL FIELDS):
 {{
+  "metadata": {{
+    "policy_id": "POL-SAST-2025-001",
+    "policy_name": "Static Application Security Testing (SAST) Policy",
+    "version": "1.0",
+    "status": "Draft",
+    "created_date": "2025-11-05T00:00:00",
+    "last_updated": "2025-11-05T00:00:00",
+    "next_review_date": "2026-02-05",
+    "author": "Security Policy Generator",
+    "approved_by": null,
+    "department": "Information Security",
+    "classification": "Internal"
+  }},
+  
+  "policy_statement": {{
+    "purpose": "To establish standards for identifying and remediating source code vulnerabilities through static analysis",
+    "description": "This policy defines requirements for SAST implementation, vulnerability management, and secure code development practices",
+    "applicability": "All development teams and applications with custom source code",
+    "enforcement": "Mandatory SAST scans in CI/CD pipeline with quality gates",
+    "exceptions": "Legacy applications may request temporary exemptions through security review board"
+  }},
+  
   "policy_type": "SAST",
   "executive_summary": "2-3 sentences on overall code security posture and key risks",
   "scope": "Application source code security analysis",
@@ -79,8 +101,30 @@ DEPENDENCY VULNERABILITIES:
 VULNERABLE DEPENDENCIES:
 {findings_list}
 
-OUTPUT JSON STRUCTURE:
+OUTPUT JSON STRUCTURE (MUST INCLUDE ALL FIELDS):
 {{
+  "metadata": {{
+    "policy_id": "POL-SCA-2025-001",
+    "policy_name": "Software Composition Analysis (SCA) Policy",
+    "version": "1.0",
+    "status": "Draft",
+    "created_date": "2025-11-05T00:00:00",
+    "last_updated": "2025-11-05T00:00:00",
+    "next_review_date": "2026-02-05",
+    "author": "Security Policy Generator",
+    "approved_by": null,
+    "department": "Information Security",
+    "classification": "Internal"
+  }},
+  
+  "policy_statement": {{
+    "purpose": "To manage third-party dependency security risks and ensure supply chain integrity",
+    "description": "This policy establishes requirements for dependency scanning, vulnerability management, and SBOM maintenance",
+    "applicability": "All applications using third-party libraries, packages, or open-source components",
+    "enforcement": "Automated SCA scans with blocking of high-risk dependencies",
+    "exceptions": "Critical dependencies with no alternatives may be approved with compensating controls"
+  }},
+  
   "policy_type": "SCA",
   "executive_summary": "2-3 sentences on dependency security posture and supply chain risks",
   "scope": "Third-party dependency and supply chain security",
@@ -139,8 +183,30 @@ RUNTIME VULNERABILITIES:
 RUNTIME SECURITY ISSUES:
 {findings_list}
 
-OUTPUT JSON STRUCTURE:
+OUTPUT JSON STRUCTURE (MUST INCLUDE ALL FIELDS):
 {{
+  "metadata": {{
+    "policy_id": "POL-DAST-2025-001",
+    "policy_name": "Dynamic Application Security Testing (DAST) Policy",
+    "version": "1.0",
+    "status": "Draft",
+    "created_date": "2025-11-05T00:00:00",
+    "last_updated": "2025-11-05T00:00:00",
+    "next_review_date": "2026-02-05",
+    "author": "Security Policy Generator",
+    "approved_by": null,
+    "department": "Information Security",
+    "classification": "Internal"
+  }},
+  
+  "policy_statement": {{
+    "purpose": "To identify and remediate runtime security vulnerabilities through dynamic testing",
+    "description": "This policy defines requirements for DAST implementation, runtime security monitoring, and production security hardening",
+    "applicability": "All web applications, APIs, and internet-facing services",
+    "enforcement": "Pre-production DAST scans required before deployment to production",
+    "exceptions": "Internal-only applications may use reduced scan frequency with approval"
+  }},
+  
   "policy_type": "DAST",
   "executive_summary": "2-3 sentences on runtime security posture and exposure risks",
   "scope": "Runtime application security and infrastructure",
