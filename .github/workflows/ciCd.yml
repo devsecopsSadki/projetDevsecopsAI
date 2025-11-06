@@ -290,18 +290,31 @@ jobs:
       - name: Run OWASP ZAP Scan
         run: |
           TARGET_URL="http://app-container:8080"
-          echo "Starting ZAP scan against ${TARGET_URL}"
+          echo "Starting ZAP API scan against ${TARGET_URL}"
           READY_URL="http://app-container:8080/actuator/health"
-
+          
           touch ${{ env.REPORTS_DIR }}/dast-report.json
           touch ${{ env.REPORTS_DIR }}/dast-report.html
           chmod 666 ${{ env.REPORTS_DIR }}/dast-report.*
-
+          
           # Preflight check
           docker run --rm --network secnet curlimages/curl:8.10.1 \
             -s -o /dev/null -w "%{http_code}" "${READY_URL}" | grep -Eq '^(200|302)$'
-
-          # Run ZAP API scan with OpenAPI specification
+          
+          # Download OpenAPI specification
+          echo "Downloading OpenAPI specification..."
+          docker run --rm --network secnet curlimages/curl:8.10.1 \
+            -s http://app-container:8080/v3/api-docs \
+            -o /tmp/openapi.json
+          
+          # Copy to reports directory (accessible to ZAP container)
+          docker run --rm --network secnet curlimages/curl:8.10.1 \
+            -s http://app-container:8080/v3/api-docs > ${{ env.REPORTS_DIR }}/openapi.json
+          
+          echo "OpenAPI spec downloaded:"
+          cat ${{ env.REPORTS_DIR }}/openapi.json | head -20
+          
+          # Run ZAP API scan with local OpenAPI file
           docker run --rm \
             --network secnet \
             --user 0 \
@@ -310,11 +323,11 @@ jobs:
             zaproxy/zap-stable zap-api-scan.py \
             -t "${TARGET_URL}" \
             -f openapi \
-            -u http://app-container:8080/v3/api-docs \
+            -d /zap/wrk/openapi.json \
             -J dast-report.json \
             -r dast-report.html \
             -I || true
-
+          
           echo "Verifying reports..."
           ls -lh ${{ env.REPORTS_DIR }}/dast-report.json || echo "WARNING: JSON not created"
           ls -lh ${{ env.REPORTS_DIR }}/dast-report.html || echo "WARNING: HTML not created"
