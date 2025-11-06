@@ -10,7 +10,7 @@ pipeline {
       DOCKER_NET        = 'secnet'
       APP_INTERNAL_PORT = '8080'   // port INSIDE the app container
       APP_HOST_PORT     = '8082'   // port on your Windows host
-      ZAP_PATH          = '/'      // or '/actuator/health' if it exists and returns 200
+      ZAP_PATH          = '/actuator/health'      // or '/actuator/health' if it exists and returns 200
     }
 
     stages {
@@ -209,9 +209,16 @@ pipeline {
 
               READY=0
               for i in $(seq 1 60); do
-                # host check (for your browser)
-                if curl -fsS "http://localhost:${APP_HOST_PORT}${ZAP_PATH}" >/dev/null 2>&1; then
-                  READY=1; echo "✓ App is reachable on localhost:${APP_HOST_PORT}${ZAP_PATH}"; break
+                # Check from the SAME docker network (don’t rely on host localhost)
+                CODE=$(docker run --rm --network "${DOCKER_NET}" curlimages/curl:8.10.1 \
+                  -s -o /dev/null -w "%{http_code}" \
+                  "http://app-container:${APP_INTERNAL_PORT}${ZAP_PATH}" || echo "000")
+
+                # consider 200/204/301/302/401/403/405 as "up"
+                if echo "$CODE" | grep -Eq '^(200|204|301|302|401|403|405)$'; then
+                  echo "✓ App is up inside ${DOCKER_NET} (HTTP ${CODE})"
+                  READY=1
+                  break
                 fi
                 sleep 2
               done
@@ -226,6 +233,7 @@ pipeline {
             '''
           }
         }
+
 
 
         stage('Debug - Verify Network Connectivity') {
