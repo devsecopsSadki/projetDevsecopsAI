@@ -228,23 +228,41 @@ pipeline {
         stage('DAST Analysis - ZAP Scan') {
           steps {
             echo '🕷️ Running DAST scan with OWASP ZAP...'
-            sh """
-              echo "Starting OWASP ZAP scan against http://elegant_lichterman:${APP_PORT}"
+            sh '''
+              TARGET_URL="http://host.docker.internal:${APP_PORT}${ZAP_PATH}"
+              echo "Starting OWASP ZAP scan against ${TARGET_URL}"
 
-              # Ensure shared network exists
+              # Ensure network exists (safe even if not used by target)
               docker network inspect "${DOCKER_NET}" >/dev/null 2>&1 || docker network create "${DOCKER_NET}"
 
+              # Ensure reports dir is writable and files exist
+              mkdir -p "${WORKSPACE}/${REPORTS_DIR}"
+              chmod -R 0777 "${WORKSPACE}/${REPORTS_DIR}" || true
+              touch "${WORKSPACE}/${REPORTS_DIR}/dast-report.json" "${WORKSPACE}/${REPORTS_DIR}/dast-report.html" || true
+
+              # Verify target returns 200/302 before scanning
+              set -e
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${TARGET_URL}")
+              if ! echo "$HTTP_CODE" | grep -qE '^(200|302)$'; then
+                echo "Target URL returned HTTP $HTTP_CODE. Update ZAP_PATH to a page that returns 200."
+                exit 1
+              fi
+              set +e
+
+              # Run ZAP baseline scan (writes reports into mounted folder)
               docker run --rm \
                 --network "${DOCKER_NET}" \
+                --user 0 \
                 -v "${WORKSPACE}/${REPORTS_DIR}:/zap/wrk/:rw" \
+                -w /zap/wrk \
                 zaproxy/zap-stable zap-baseline.py \
-                  -t "http://elegant_lichterman:${APP_PORT}" \
+                  -t "${TARGET_URL}" \
                   -J dast-report.json \
                   -r dast-report.html || true
 
               echo "Verifying DAST report was created..."
               ls -lh "${WORKSPACE}/${REPORTS_DIR}/dast-report.json" || echo "WARNING: DAST report not created"
-            """
+            '''
             echo 'DAST scan completed'
           }
           post {
@@ -255,6 +273,7 @@ pipeline {
             }
           }
         }
+
 
 
 
