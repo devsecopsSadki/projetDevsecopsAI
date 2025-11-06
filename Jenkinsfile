@@ -6,9 +6,11 @@ pipeline {
     }
 
     environment {
-        REPORTS_DIR = 'security-reports'
-         DOCKER_NET  = 'secnet'
-            APP_PORT    = '8082'
+      REPORTS_DIR       = 'security-reports'
+      DOCKER_NET        = 'secnet'
+      APP_INTERNAL_PORT = '8080'   // port INSIDE the app container
+      APP_HOST_PORT     = '8082'   // port on your Windows host
+      ZAP_PATH          = '/'      // or '/actuator/health' if it exists and returns 200
     }
 
     stages {
@@ -189,116 +191,109 @@ pipeline {
         }
 
         stage('Start Application in Docker') {
-            steps {
-                echo "🚀 Starting application in Docker container on network ${DOCKER_NET}..."
-                sh '''
-                    # Ensure shared network exists
-                    docker network inspect "${DOCKER_NET}" >/dev/null 2>&1 || docker network create "${DOCKER_NET}"
-                    
-                    # Stop and remove any existing app container
-                    docker stop app-container 2>/dev/null || true
-                    docker rm app-container 2>/dev/null || true
-                    
-                    # Run your custom Docker image
-                    docker run -d \
-                        --name app-container \
-                        --network "${DOCKER_NET}" \
-                        -p ${APP_PORT}:${APP_PORT} \
-                        -e SERVER_PORT=${APP_PORT} \
-                        my-app:latest
-                    
-                    echo "Container started, waiting for app to be ready..."
-                    
-                    # Wait for app to be ready
-                    READY=0
-                    for i in $(seq 1 60); do
-                        if curl -fsS "http://localhost:${APP_PORT}/actuator/health" >/dev/null 2>&1; then
-                            READY=1
-                            echo "✓ App is ready on /actuator/health"
-                            break
-                        elif curl -fsS "http://localhost:${APP_PORT}/" >/dev/null 2>&1; then
-                            READY=1
-                            echo "✓ App is ready on /"
-                            break
-                        fi
-                        echo "Waiting... ($i/60)"
-                        sleep 2
-                    done
-                    
-                    if [ "$READY" -ne 1 ]; then
-                        echo "❌ App did not become ready in time"
-                        echo "Container logs:"
-                        docker logs app-container
-                        exit 1
-                    fi
-                    
-                    echo "✅ App is running in container on network ${DOCKER_NET}"
-                '''
-            }
+          steps {
+            echo "🚀 Starting application in Docker container on network ${DOCKER_NET}..."
+            sh '''
+              docker network inspect "${DOCKER_NET}" >/dev/null 2>&1 || docker network create "${DOCKER_NET}"
+
+              docker rm -f app-container 2>/dev/null || true
+
+              docker run -d \
+                --name app-container \
+                --network "${DOCKER_NET}" \
+                -p ${APP_HOST_PORT}:${APP_INTERNAL_PORT} \
+                -e SERVER_PORT=${APP_INTERNAL_PORT} \
+                my-app:latest
+
+              echo "Container started, waiting for app to be ready..."
+
+              READY=0
+              for i in $(seq 1 60); do
+                # host check (for your browser)
+                if curl -fsS "http://localhost:${APP_HOST_PORT}${ZAP_PATH}" >/dev/null 2>&1; then
+                  READY=1; echo "✓ App is reachable on localhost:${APP_HOST_PORT}${ZAP_PATH}"; break
+                fi
+                sleep 2
+              done
+
+              if [ "$READY" -ne 1 ]; then
+                echo "❌ App did not become ready in time"
+                docker logs app-container || true
+                exit 1
+              fi
+
+              echo "✅ App is running in container on network ${DOCKER_NET}"
+            '''
+          }
         }
+
 
         stage('Debug - Verify Network Connectivity') {
-            steps {
-                echo '🔍 Testing network connectivity...'
-                sh '''
-                    echo "1. Testing from Jenkins to app container via localhost:${APP_PORT}"
-                    curl -s -o /dev/null -w "HTTP %{http_code}\\n" "http://localhost:${APP_PORT}/" || echo "Failed"
-                    
-                    echo ""
-                    echo "2. Testing from temporary container on ${DOCKER_NET} network:"
-                    docker run --rm --network "${DOCKER_NET}" curlimages/curl:latest \
-                        curl -s -o /dev/null -w "HTTP %{http_code}\\n" "http://app-container:${APP_PORT}/" || echo "Failed"
-                    
-                    echo ""
-                    echo "3. Showing containers on network:"
-                    docker network inspect "${DOCKER_NET}" | grep -A 5 "Containers" || true
-                '''
-            }
+          steps {
+            echo '🔍 Testing network connectivity...'
+            sh '''
+              echo "1) From Jenkins to app via host port:"
+              curl -s -o /dev/null -w "HTTP %{http_code}\\n" "http://localhost:${APP_HOST_PORT}${ZAP_PATH}" || echo "Failed"
+
+              echo ""
+              echo "2) From a temp container on ${DOCKER_NET} to app-container (internal port):"
+              docker run --rm --network "${DOCKER_NET}" curlimages/curl:8.10.1 \
+                -s -o /dev/null -w "HTTP %{http_code}\\n" "http://app-container:${APP_INTERNAL_PORT}${ZAP_PATH}" || echo "Failed"
+
+              echo ""
+              echo "3) Containers on network:"
+              docker network inspect "${DOCKER_NET}" | grep -A 5 '"Containers"' || true
+            '''
+          }
         }
+
 
         stage('DAST Analysis - ZAP Scan') {
-            steps {
-                echo '🕷️ Running DAST scan with OWASP ZAP...'
-                sh '''
-                    echo "Starting OWASP ZAP scan against http://app-container:${APP_PORT}"
+          steps {
+            echo '🕷️ Running DAST scan with OWASP ZAP...'
+            sh '''
+              TARGET_URL="http://app-container:${APP_INTERNAL_PORT}${ZAP_PATH}"
+              echo "Starting OWASP ZAP scan against ${TARGET_URL}"
 
-                    # Create reports directory with proper permissions
-                    mkdir -p "${WORKSPACE}/${REPORTS_DIR}"
-                    chmod 777 "${WORKSPACE}/${REPORTS_DIR}"
-                    
-                    # Pre-create report files
-                    touch "${WORKSPACE}/${REPORTS_DIR}/dast-report.json"
-                    touch "${WORKSPACE}/${REPORTS_DIR}/dast-report.html"
-                    chmod 666 "${WORKSPACE}/${REPORTS_DIR}/dast-report.json"
-                    chmod 666 "${WORKSPACE}/${REPORTS_DIR}/dast-report.html"
+              mkdir -p "${WORKSPACE}/${REPORTS_DIR}"
+              chmod 777 "${WORKSPACE}/${REPORTS_DIR}"
+              : > "${WORKSPACE}/${REPORTS_DIR}/dast-report.json"
+              : > "${WORKSPACE}/${REPORTS_DIR}/dast-report.html"
+              chmod 666 "${WORKSPACE}/${REPORTS_DIR}/dast-report."*
 
-                    # Run ZAP on the same network as the app
-                    docker run --rm \
-                        --network "${DOCKER_NET}" \
-                        --user root \
-                        -v "${WORKSPACE}/${REPORTS_DIR}:/zap/wrk/:rw" \
-                        zaproxy/zap-stable zap-baseline.py \
-                            -t "http://app-container:${APP_PORT}" \
-                            -g gen.conf \
-                            -J /zap/wrk/dast-report.json \
-                            -r /zap/wrk/dast-report.html \
-                            -I || true
+              # Preflight check from SAME network (fail fast if wrong URL/port)
+              set -e
+              docker run --rm --network "${DOCKER_NET}" curlimages/curl:8.10.1 \
+                -s -o /dev/null -w "%{http_code}" "${TARGET_URL}" | grep -Eq '^(200|302)$'
+              set +e
 
-                    echo ""
-                    echo "Verifying DAST reports were created..."
-                    ls -lh "${WORKSPACE}/${REPORTS_DIR}/dast-report.json" || echo "WARNING: JSON report not created"
-                    ls -lh "${WORKSPACE}/${REPORTS_DIR}/dast-report.html" || echo "WARNING: HTML report not created"
-                '''
-                echo '✅ DAST scan completed'
+              docker run --rm \
+                --network "${DOCKER_NET}" \
+                --user 0 \
+                -v "${WORKSPACE}/${REPORTS_DIR}:/zap/wrk/:rw" \
+                -w /zap/wrk \
+                zaproxy/zap-stable zap-baseline.py \
+                  -t "${TARGET_URL}" \
+                  -g gen.conf \
+                  -J dast-report.json \
+                  -r dast-report.html \
+                  -m 5 \
+                  -I || true
+
+              echo "Verifying DAST reports..."
+              ls -lh "${WORKSPACE}/${REPORTS_DIR}/dast-report.json" || echo "WARNING: JSON report not created"
+              ls -lh "${WORKSPACE}/${REPORTS_DIR}/dast-report.html" || echo "WARNING: HTML report not created"
+            '''
+            echo '✅ DAST scan completed'
+          }
+          post {
+            always {
+              archiveArtifacts artifacts: "${REPORTS_DIR}/dast-report.json,${REPORTS_DIR}/dast-report.html",
+                               fingerprint: true, allowEmptyArchive: true
             }
-            post {
-                always {
-                    archiveArtifacts artifacts: "${REPORTS_DIR}/dast-report.json,${REPORTS_DIR}/dast-report.html",
-                                     fingerprint: true,
-                                     allowEmptyArchive: true
-                }
-            }
+          }
         }
+
 
         stage('Stop Application') {
             steps {
