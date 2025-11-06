@@ -228,7 +228,7 @@ pipeline {
         stage('DAST Analysis - ZAP Scan') {
           steps {
             echo '🕷️ Running DAST scan with OWASP ZAP...'
-            sh '''
+            sh """
               echo "Starting OWASP ZAP scan against http://elegant_lichterman:${APP_PORT}"
 
               # Ensure shared network exists
@@ -237,14 +237,14 @@ pipeline {
               docker run --rm \
                 --network "${DOCKER_NET}" \
                 -v "${WORKSPACE}/${REPORTS_DIR}:/zap/wrk/:rw" \
-                owasp/zap2docker-stable zap-baseline.py \
-                -t "http://elegant_lichterman:${APP_PORT}" \
-                -J dast-report.json \
-                -r dast-report.html || true
+                zaproxy/zap-stable zap-baseline.py \
+                  -t "http://elegant_lichterman:${APP_PORT}" \
+                  -J dast-report.json \
+                  -r dast-report.html || true
 
               echo "Verifying DAST report was created..."
               ls -lh "${WORKSPACE}/${REPORTS_DIR}/dast-report.json" || echo "WARNING: DAST report not created"
-            '''
+            """
             echo 'DAST scan completed'
           }
           post {
@@ -255,6 +255,7 @@ pipeline {
             }
           }
         }
+
 
 
 
