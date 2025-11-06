@@ -273,19 +273,8 @@ pipeline {
                 "http://app-container:${APP_INTERNAL_PORT}/actuator/health" | grep -Eq '^(200|302)$'
               set +e
 
-              docker run --rm \
-                --network "${DOCKER_NET}" \
-                --user 0 \
-                -v "${WORKSPACE}/${REPORTS_DIR}:/zap/wrk/:rw" \
-                -w /zap/wrk \
-                zaproxy/zap-stable zap-baseline.py \
-                  -t "${TARGET_URL}" \
-                  -g /zap/wrk/gen.conf \
-                  -J /zap/wrk/dast-report.json \
-                  -r /zap/wrk/dast-report.html \
-                  -m 10 \            # crawl for ~10 minutes (adjust as needed)
-                  -I \
-                  -d                  # debug output (optional)
+              docker run --rm --network "${DOCKER_NET}" --user 0 -v "${WORKSPACE}/${REPORTS_DIR}:/zap/wrk/:rw" -w /zap/wrk zaproxy/zap-stable zap-baseline.py -t "${TARGET_URL}" -g /zap/wrk/gen.conf -J /zap/wrk/dast-report.json -r /zap/wrk/dast-report.html -m 10 -I -d
+
 
               echo "Verifying DAST reports..."
               ls -lh "${WORKSPACE}/${REPORTS_DIR}/dast-report.json" || echo "WARNING: JSON report not created"
