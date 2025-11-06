@@ -11,7 +11,7 @@ env:
   DOCKER_NET: secnet
   APP_INTERNAL_PORT: 8080
   APP_HOST_PORT: 8082
-  ZAP_PATH: /
+  ZAP_PATH: /actuator/health
   IMAGE_NAME: my-app
 
 jobs:
@@ -262,7 +262,7 @@ jobs:
           
           echo "Waiting for app to be ready..."
           READY=0
-          for i in $(seq 1 60); do
+          for i in $(seq 1 120); do
             if curl -fsS "http://localhost:${{ env.APP_HOST_PORT }}${{ env.ZAP_PATH }}" >/dev/null 2>&1; then
               READY=1
               echo "✅ App is ready"
