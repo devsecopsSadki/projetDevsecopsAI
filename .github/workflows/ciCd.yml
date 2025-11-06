@@ -304,11 +304,13 @@ jobs:
           # Download OpenAPI specification
           echo "Downloading OpenAPI specification..."
           
-          cat ${{ env.REPORTS_DIR }}/openapi.json | jq .
+          
 
           docker run --rm --network secnet curlimages/curl:8.10.1 \
             -s http://app-container:8080/v3/api-docs \
             -o /tmp/openapi.json
+          echo "checking the openapi file"
+          cat ${{ env.REPORTS_DIR }}/openapi.json | jq .
           
           # Copy to reports directory (accessible to ZAP container)
           docker run --rm --network secnet curlimages/curl:8.10.1 \
