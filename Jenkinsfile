@@ -1,14 +1,20 @@
 pipeline {
     agent any
+    tools {
+        maven 'maven'
+        
+    }
 
     environment {
         REPORTS_DIR = 'security-reports'
+         DOCKER_NET  = 'secnet'
+            APP_PORT    = '8082'
     }
 
     stages {
         stage('Preparation') {
             steps {
-                echo ' Starting SAST Analysis Pipeline'
+                echo ' Starting DevSecOps Security Analysis Pipeline (SAST, SCA, DAST)'
                 sh '''
                     rm -rf ${REPORTS_DIR}
                     mkdir -p ${REPORTS_DIR}
@@ -23,7 +29,7 @@ pipeline {
                 dir('FetchingData'){
                 script {
                     try {
-                        sh 'mvn clean compile -DskipTests'
+                        sh 'mvn clean package -DskipTests'
                     } catch (Exception e) {
                         echo "Build skipped: ${e.message}"
                     }
@@ -33,42 +39,71 @@ pipeline {
         }
         
         stage('SCA - Dependency Scan') {
-	    steps {
-		script {
-		    echo "Running SCA for Maven project..."
-		    sh '''
-		        # Install Snyk if not present
-		        command -v snyk || npm install -g snyk
-		    '''
+            steps {
+                script {
+                    echo "Running SCA for Maven project..."
 
-		    withCredentials([string(credentialsId: 'SNYK_TOKEN', variable: 'SNYK_TOKEN')]) {
-		        sh '''
-		            # Authenticate Snyk
-		            snyk auth $SNYK_TOKEN
+                    withCredentials([string(credentialsId: 'SNYK_TOKEN', variable: 'SNYK_TOKEN')]) {
 
-		            # Run Snyk scan and generate JSON report
-		            snyk test --file=pom.xml --package-manager=maven --json \
-		              | jq '.vulnerabilities[] | {
-		                  title,
-		                  severity,
-		                  packageName,
-		                  current_version: .version,
-		                  recommended_version: (
-		                    (.fixedIn[0]) // 
-		                    (.upgradePath[-1] | select(. != false)) // 
-		                    "N/A"
-		                  )
-		                }' > ${REPORTS_DIR}/sca-report.json || true
-		        '''
-		    }
-		}
-	    }
-	    post {
-		always {
-		    archiveArtifacts artifacts: "${REPORTS_DIR}/sca-report.json", fingerprint: true
-		}
-	    }
-	}
+                        // Go into the real app directory that has pom.xml
+                        dir('FetchingData') {
+
+                            sh '''
+                                echo "Installing Snyk locally (no sudo needed)..."
+                                npm install snyk
+
+                                echo "Authenticating with Snyk..."
+                                npx snyk auth $SNYK_TOKEN || true
+
+                                echo "Running Snyk test on FetchingData/pom.xml..."
+                                # Save full raw Snyk JSON to the reports directory
+                                # Using absolute path from workspace root
+                                npx snyk test --file=pom.xml --package-manager=maven --json \
+                                    > ../security-reports/sca-raw.json 2>&1 || true
+                                
+                                echo "Verifying report was created..."
+                                ls -lh ../security-reports/sca-raw.json || echo "WARNING: Report file not created"
+                            '''
+                        }
+                    }
+                }
+            }
+
+            post {
+                always {
+                    archiveArtifacts artifacts: "${REPORTS_DIR}/sca-raw.json", fingerprint: true, allowEmptyArchive: true
+                }
+            }
+        }
+
+        stage('Parse SCA Report') {
+            steps {
+                echo ' Parsing SCA report for LLM...'
+                sh '''
+                    # Verify report exists before parsing
+                    if [ -f "${REPORTS_DIR}/sca-raw.json" ]; then
+                        echo "Report file found, parsing..."
+                        cd parsers
+                        python3 parsca.py \
+                            ../${REPORTS_DIR}/sca-raw.json \
+                            ../${REPORTS_DIR}/sca-findings.txt
+                    else
+                        echo "ERROR: sca-raw.json not found, skipping parsing"
+                        exit 1
+                    fi
+                '''
+
+                echo 'SCA report parsed and ready for LLM'
+            }
+            
+            post {
+                always {
+                    archiveArtifacts artifacts: "${REPORTS_DIR}/sca-findings.txt", fingerprint: true, allowEmptyArchive: true
+                }
+            }
+        }
+
+
 
 
 
@@ -78,12 +113,18 @@ pipeline {
 
                 script {
                     withSonarQubeEnv('SonarQube') {
-                        sh """
-                            sonar-scanner \
-                                -Dsonar.projectKey=my-project \
-                                -Dsonar.sources=FetchingData/src \
-                                -Dsonar.java.binaries=FetchingData/target/classes
-                        """
+                         sh '''
+                                # Make sure the CLI is on PATH for this step
+                                export PATH="$PATH:/opt/sonar-scanner/bin"
+
+                                # Run analysis (include host + token)
+                                sonar-scanner \
+                                  -Dsonar.projectKey=my-project \
+                                  -Dsonar.sources=FetchingData/src \
+                                  -Dsonar.java.binaries=FetchingData/target/classes \
+                                  -Dsonar.host.url=$SONAR_HOST_URL \
+                                  -Dsonar.login=$SONAR_AUTH_TOKEN
+                              '''
                     }
                 }
 
@@ -100,14 +141,20 @@ pipeline {
 
                 echo ' SAST scan completed'
             }
+            post {
+    always {
+        archiveArtifacts artifacts: "${REPORTS_DIR}/sast-report.json", 
+                         fingerprint: true, 
+                         allowEmptyArchive: true
+    }
+}
         }
 
        stage('Parse SAST Report') {
             steps {
-                echo '📊 Parsing SAST report for LLM...'
+                echo 'Parsing SAST report for LLM...'
                 
                 script {
-                    // Use your custom parser at parsers/sast/parsast.py
                     sh """
                         python3 parsers/sast/parsast.py \
                             ${REPORTS_DIR}/sast-report.json \
@@ -115,7 +162,7 @@ pipeline {
                     """
                 }
 
-                echo '✅ Report parsed and ready for LLM'
+                echo ' Report parsed and ready for LLM'
             }
             post {
                 always {
@@ -126,7 +173,172 @@ pipeline {
             }
         }
 
-       /* stage('Generate Policies with AI') {
+        stage('Start Application in Docker') {
+            steps {
+                echo "🚀 Starting application in Docker container on network ${DOCKER_NET}..."
+                sh '''
+                    # Ensure shared network exists
+                    docker network inspect "${DOCKER_NET}" >/dev/null 2>&1 || docker network create "${DOCKER_NET}"
+                    
+                    # Stop and remove any existing app container
+                    docker stop app-container 2>/dev/null || true
+                    docker rm app-container 2>/dev/null || true
+                    
+                    # Find the JAR file
+                    ARTIFACT=$(ls FetchingData/target/*.jar 2>/dev/null | head -n1 || true)
+                    if [ -z "$ARTIFACT" ]; then
+                        echo "ERROR: No jar found in FetchingData/target/"
+                        exit 1
+                    fi
+                    
+                    echo "Found artifact: $ARTIFACT"
+                    
+                    # Run app in Docker container on the shared network
+                    # Using Eclipse Temurin (OpenJDK) image
+                    docker run -d \
+                        --name app-container \
+                        --network "${DOCKER_NET}" \
+                        -p ${APP_PORT}:${APP_PORT} \
+                        -v "${WORKSPACE}/FetchingData/target:/app:ro" \
+                        eclipse-temurin:17-jre-alpine \
+                        java -jar /app/$(basename $ARTIFACT) --server.port=${APP_PORT} --server.address=0.0.0.0
+                    
+                    echo "Container started, waiting for app to be ready..."
+                    
+                    # Wait for app to be ready (check from Jenkins side via published port)
+                    READY=0
+                    for i in $(seq 1 60); do
+                        if curl -fsS "http://localhost:${APP_PORT}/actuator/health" >/dev/null 2>&1; then
+                            READY=1
+                            echo "✓ App is ready on /actuator/health"
+                            break
+                        elif curl -fsS "http://localhost:${APP_PORT}/" >/dev/null 2>&1; then
+                            READY=1
+                            echo "✓ App is ready on /"
+                            break
+                        fi
+                        echo "Waiting... ($i/60)"
+                        sleep 2
+                    done
+                    
+                    if [ "$READY" -ne 1 ]; then
+                        echo "❌ App did not become ready in time"
+                        echo "Container logs:"
+                        docker logs app-container
+                        exit 1
+                    fi
+                    
+                    echo "✅ App is running in container on network ${DOCKER_NET}"
+                '''
+            }
+        }
+
+        // ==================== OPTIONAL: Debug network connectivity ====================
+        stage('Debug - Verify Network Connectivity') {
+            steps {
+                echo '🔍 Testing network connectivity...'
+                sh '''
+                    echo "1. Testing from Jenkins to app container via localhost:${APP_PORT}"
+                    curl -s -o /dev/null -w "HTTP %{http_code}\\n" "http://localhost:${APP_PORT}/" || echo "Failed"
+                    
+                    echo ""
+                    echo "2. Testing from temporary container on ${DOCKER_NET} network:"
+                    docker run --rm --network "${DOCKER_NET}" curlimages/curl:latest \
+                        curl -s -o /dev/null -w "HTTP %{http_code}\\n" "http://app-container:${APP_PORT}/" || echo "Failed"
+                    
+                    echo ""
+                    echo "3. Showing containers on network:"
+                    docker network inspect "${DOCKER_NET}" | grep -A 5 "Containers" || true
+                '''
+            }
+        }
+
+        // ==================== CHANGED: Updated ZAP target to app-container ====================
+        stage('DAST Analysis - ZAP Scan') {
+            steps {
+                echo '🕷️ Running DAST scan with OWASP ZAP...'
+                sh '''
+                    echo "Starting OWASP ZAP scan against http://app-container:${APP_PORT}"
+
+                    # Create reports directory with proper permissions
+                    mkdir -p "${WORKSPACE}/${REPORTS_DIR}"
+                    chmod 777 "${WORKSPACE}/${REPORTS_DIR}"
+                    
+                    # Pre-create report files
+                    touch "${WORKSPACE}/${REPORTS_DIR}/dast-report.json"
+                    touch "${WORKSPACE}/${REPORTS_DIR}/dast-report.html"
+                    chmod 666 "${WORKSPACE}/${REPORTS_DIR}/dast-report.json"
+                    chmod 666 "${WORKSPACE}/${REPORTS_DIR}/dast-report.html"
+
+                    # Run ZAP on the same network as the app
+                    docker run --rm \
+                        --network "${DOCKER_NET}" \
+                        --user root \
+                        -v "${WORKSPACE}/${REPORTS_DIR}:/zap/wrk/:rw" \
+                        zaproxy/zap-stable zap-baseline.py \
+                            -t "http://app-container:${APP_PORT}" \
+                            -g gen.conf \
+                            -J /zap/wrk/dast-report.json \
+                            -r /zap/wrk/dast-report.html \
+                            -I || true
+
+                    echo ""
+                    echo "Verifying DAST reports were created..."
+                    ls -lh "${WORKSPACE}/${REPORTS_DIR}/dast-report.json" || echo "WARNING: JSON report not created"
+                    ls -lh "${WORKSPACE}/${REPORTS_DIR}/dast-report.html" || echo "WARNING: HTML report not created"
+                '''
+                echo '✅ DAST scan completed'
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: "${REPORTS_DIR}/dast-report.json,${REPORTS_DIR}/dast-report.html",
+                                     fingerprint: true,
+                                     allowEmptyArchive: true
+                }
+            }
+        }
+
+        // ==================== CHANGED: Stop Docker container instead of process ====================
+        stage('Stop Application') {
+            steps {
+                echo '🛑 Stopping application container...'
+                sh '''
+                    docker stop app-container 2>/dev/null || true
+                    docker rm app-container 2>/dev/null || true
+                    echo "✅ Application container stopped and removed"
+                '''
+            }
+        }
+        stage('Parse DAST Report') {
+            steps {
+                echo ' Parsing DAST report for LLM...'
+                script {
+                    sh '''
+                        if [ -f "${REPORTS_DIR}/dast-report.json" ]; then
+                            echo "DAST report file found, parsing..."
+                            cd parsers/dast
+                            python3 pardast.py \
+                                ../../${REPORTS_DIR}/dast-report.json \
+                                ../../${REPORTS_DIR}/dast-findings.txt
+                        else
+                            echo "WARNING: dast-report.json not found, skipping parsing"
+                            echo "No DAST findings to report." > ${REPORTS_DIR}/dast-findings.txt
+                        fi
+                    '''
+                }
+
+                echo 'DAST report parsed and ready for LLM'
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: "${REPORTS_DIR}/dast-findings.txt",
+                                     fingerprint: true,
+                                     allowEmptyArchive: true
+                }
+            }
+        }
+
+        stage('Generate Policies with AI') {
             steps {
                 echo 'Generating security policies with LLM...'
                 sh '''
@@ -139,7 +351,7 @@ pipeline {
 
                 echo ' Policies generated'
             }
-        }*/
+        }
 
         stage('Display Summary') {
             steps {
@@ -152,6 +364,11 @@ pipeline {
                     if [ -f "${REPORTS_DIR}/sast-findings.txt" ]; then
                         FINDING_COUNT=$(grep -c "^--- Finding" ${REPORTS_DIR}/sast-findings.txt || echo "0")
                         echo "Total SAST Findings: $FINDING_COUNT"
+                    fi
+
+                    if [ -f "${REPORTS_DIR}/dast-findings.txt" ]; then
+                        DAST_COUNT=$(grep -c "^--- DAST Finding" ${REPORTS_DIR}/dast-findings.txt || echo "0")
+                        echo "Total DAST Findings: $DAST_COUNT"
                     fi
 
                     if [ -f "${REPORTS_DIR}/security-policies.json" ]; then
