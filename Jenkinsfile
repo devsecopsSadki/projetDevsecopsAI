@@ -267,34 +267,31 @@ pipeline {
 
                 mkdir -p "${WORKSPACE}/${REPORTS_DIR}"
 
-                # Preflight: ensure target is up from SAME Docker network
+                # Preflight from SAME docker network
                 docker run --rm --network "${DOCKER_NET}" curlimages/curl:8.10.1 \
-                  -s -o /dev/null -w "%{http_code}" "http://app-container:${APP_INTERNAL_PORT}/actuator/health" | grep -Eq "^(200|302)$"
+                  -s -o /dev/null -w "%{http_code}" "http://app-container:${APP_INTERNAL_PORT}/actuator/health" \
+                  | grep -Eq "^(200|302)$"
 
-                # Run ZAP in a named container, write reports into container FS
+                # --- FIX: define the volume name before using it ---
                 ZAP_CONT="zap-run-$$"
-                docker run --name "${ZAP_CONT}" \
-                  --network "${DOCKER_NET}" --user 0 \
-                  zaproxy/zap-stable zap-baseline.py \
-                    -t "${TARGET_URL}" \
-                    -g /zap/wrk/gen.conf \
-                    -J /zap/wrk/dast-report.json \
-                    -r /zap/wrk/dast-report.html \
-                    -x /zap/wrk/dast-report.xml \
-                    -m 10 -I -d
+                ZAP_VOL="zapwrk-$$"
+                docker volume create "${ZAP_VOL}" >/dev/null
 
-                # Copy reports out of the container to the workspace
+                # Run baseline scan; ZAP writes into the docker-managed volume
+                docker run --name "${ZAP_CONT}" --network "${DOCKER_NET}" --user 0 -v "${ZAP_VOL}:/zap/wrk" zaproxy/zap-stable zap-baseline.py -t "${TARGET_URL}" -g /zap/wrk/gen.conf -J /zap/wrk/dast-report.json -r /zap/wrk/dast-report.html -x /zap/wrk/dast-report.xml -m 10 -I -d
+
+
+                # Copy reports back to the workspace
                 docker cp "${ZAP_CONT}:/zap/wrk/dast-report.json" "${WORKSPACE}/${REPORTS_DIR}/" || true
                 docker cp "${ZAP_CONT}:/zap/wrk/dast-report.html" "${WORKSPACE}/${REPORTS_DIR}/" || true
                 docker cp "${ZAP_CONT}:/zap/wrk/dast-report.xml"  "${WORKSPACE}/${REPORTS_DIR}/" || true
 
-                # Always remove the container
+                # Cleanup
                 docker rm -f "${ZAP_CONT}" >/dev/null 2>&1 || true
+                docker volume rm "${ZAP_VOL}" >/dev/null 2>&1 || true
 
                 echo "Verifying DAST reports..."
-                ls -lh "${WORKSPACE}/${REPORTS_DIR}/dast-report.json" || echo "WARNING: JSON report not created"
-                ls -lh "${WORKSPACE}/${REPORTS_DIR}/dast-report.html" || echo "WARNING: HTML report not created"
-                ls -lh "${WORKSPACE}/${REPORTS_DIR}/dast-report.xml"  || echo "WARNING: XML report not created"
+                ls -lh "${WORKSPACE}/${REPORTS_DIR}/dast-report."* || true
               '''
 
 

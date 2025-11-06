@@ -1,0 +1,7 @@
+/
+/actuator/health
+/api/v1/satellites/getSatellites
+/api/v1/users/createUser
+/api/v1/users/addSatellite
+/api/v1/users/getUser/1
+/api/v1/users/stallitesTrackeByUser/test@example.com
