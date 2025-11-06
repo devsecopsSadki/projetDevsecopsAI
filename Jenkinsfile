@@ -167,7 +167,7 @@ pipeline {
                     sh '''
                        docker build --no-cache -t my-app:latest .
 
-                        echo "✅ Docker image built successfully"
+                        echo "✅ Docker is is  image built successfully"
                     '''
                 }
             }
