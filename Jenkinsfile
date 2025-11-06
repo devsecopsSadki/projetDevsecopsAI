@@ -270,73 +270,48 @@ pipeline {
               REPORTS_DIR="${REPORTS_DIR:-security-reports}"
               ENDPOINTS_FILE="${WORKSPACE}/endpoints.txt"
               TARGET_BASE="${TARGET_BASE:-http://app-container:8080}"
-              ZAP_CONTAINER="${ZAP_CONTAINER:-zap-daemon}"
-              ZAP_API_PORT=35437
-              ZAP_PROXY_PORT=8080
               SPIDER_MINUTES="${SPIDER_MINUTES:-10}"
               SCAN_WAIT_MINUTES="${SCAN_WAIT_MINUTES:-20}"
               # ----------------------------------
 
               mkdir -p "${WORKSPACE}/${REPORTS_DIR}"
 
-              # Clean previous ZAP if exists
-              docker rm -f "${ZAP_CONTAINER}" >/dev/null 2>&1 || true
-
-              # Start ZAP daemon
-              docker run -d --name "${ZAP_CONTAINER}" --network "${DOCKER_NET}" --user 0 \
-                -v "${WORKSPACE}/${REPORTS_DIR}:/zap/wrk" \
-                zaproxy/zap-stable \
-                zap.sh -daemon -host 0.0.0.0 -port "${ZAP_API_PORT}" \
-                       -config api.disablekey=true -config api.addrs.addr.name=.* -config api.addrs.addr.regex=true
-
-              # Wait for ZAP API to be ready (max ~60s)
-              echo "Waiting for ZAP API on ${ZAP_API_PORT}..."
-              for i in $(seq 1 60); do
-                if docker exec "${ZAP_CONTAINER}" sh -c "wget -qO- http://localhost:${ZAP_API_PORT}/JSON/core/view/version/ >/dev/null 2>&1"; then
-                  echo "ZAP API is ready."
-                  break
-                fi
-                sleep 1
-                if [ "$i" -eq 60 ]; then
-                  echo "ERROR: ZAP API did not become ready"
-                  docker logs "${ZAP_CONTAINER}" || true
-                  exit 3
-                fi
-              done
-
-              # Seed sitemap with endpoints via ZAP proxy
+              # Seed endpoints via docker network if file exists
               if [ -f "${ENDPOINTS_FILE}" ]; then
-                echo "Seeding endpoints from ${ENDPOINTS_FILE}..."
+                echo "Pre-warming endpoints from ${ENDPOINTS_FILE}..."
                 while IFS= read -r path || [ -n "$path" ]; do
                   # Skip empty lines and comments
-                  [[ -z "$path" || "$path" =~ ^[[:space:]]*# ]] && continue
+                  if [ -z "$path" ] || echo "$path" | grep -q "^[[:space:]]*#"; then
+                    continue
+                  fi
 
                   full_url="${TARGET_BASE%/}${path}"
                   docker run --rm --network "${DOCKER_NET}" curlimages/curl:8.10.1 \
-                    -s -o /dev/null -w "SEED %{http_code} ${full_url}\n" \
-                    -x "http://${ZAP_CONTAINER}:${ZAP_PROXY_PORT}" \
+                    -s -o /dev/null -w "WARM %{http_code} ${full_url}\n" \
                     "${full_url}" || true
-                  sleep 0.1
+                  sleep 0.05
                 done < "${ENDPOINTS_FILE}"
               else
-                echo "WARNING: ${ENDPOINTS_FILE} not found; seeding skipped."
+                echo "WARNING: ${ENDPOINTS_FILE} not found; pre-warming skipped."
               fi
 
-              # Seed base URL
+              # Warm base URL
               docker run --rm --network "${DOCKER_NET}" curlimages/curl:8.10.1 \
-                -s -o /dev/null -w "SEED %{http_code} ${TARGET_BASE}/\n" \
-                -x "http://${ZAP_CONTAINER}:${ZAP_PROXY_PORT}" \
+                -s -o /dev/null -w "WARM %{http_code} ${TARGET_BASE}/\n" \
                 "${TARGET_BASE}/" || true
 
-              # Run baseline scan
-              echo "Running zap-baseline.py (spider=${SPIDER_MINUTES}m, wait=${SCAN_WAIT_MINUTES}m)..."
-              docker exec "${ZAP_CONTAINER}" python3 /zap/zap-baseline.py \
-                -t "${TARGET_BASE}/" \
-                -g /zap/wrk/gen.conf \
-                -J /zap/wrk/dast-report.json \
-                -r /zap/wrk/dast-report.html \
-                -x /zap/wrk/dast-report.xml \
-                -j -a -m "${SPIDER_MINUTES}" -T "${SCAN_WAIT_MINUTES}" -I -d || true
+              # Run ZAP baseline - let it manage its own ZAP instance
+              echo "Running ZAP baseline scan (spider=${SPIDER_MINUTES}m, wait=${SCAN_WAIT_MINUTES}m)..."
+              docker run --rm --network "${DOCKER_NET}" \
+                -v "${WORKSPACE}/${REPORTS_DIR}:/zap/wrk" \
+                zaproxy/zap-stable \
+                zap-baseline.py \
+                  -t "${TARGET_BASE}/" \
+                  -g /zap/wrk/gen.conf \
+                  -J /zap/wrk/dast-report.json \
+                  -r /zap/wrk/dast-report.html \
+                  -x /zap/wrk/dast-report.xml \
+                  -j -a -m "${SPIDER_MINUTES}" -T "${SCAN_WAIT_MINUTES}" -I -d || true
 
               echo "Reports generated in ${WORKSPACE}/${REPORTS_DIR}:"
               ls -lh "${WORKSPACE}/${REPORTS_DIR}" || true
