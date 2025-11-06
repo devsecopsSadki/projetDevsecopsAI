@@ -264,64 +264,151 @@ pipeline {
               #!/usr/bin/env bash
               set -eu
 
-              # ---- Config (tweak if needed) ----
+              # ---- Config ----
               DOCKER_NET="${DOCKER_NET:-secnet}"
               WORKSPACE="${WORKSPACE:-$PWD}"
               REPORTS_DIR="${REPORTS_DIR:-security-reports}"
               ENDPOINTS_FILE="${WORKSPACE}/endpoints.txt"
               TARGET_BASE="${TARGET_BASE:-http://app-container:8080}"
-              SPIDER_MINUTES="${SPIDER_MINUTES:-10}"
-              SCAN_WAIT_MINUTES="${SCAN_WAIT_MINUTES:-20}"
+              ZAP_CONTAINER="zap-scan"
+              ZAP_API_PORT=8090
+              SPIDER_MINUTES="${SPIDER_MINUTES:-5}"
               # ----------------------------------
 
               mkdir -p "${WORKSPACE}/${REPORTS_DIR}"
 
-              # Seed endpoints via docker network if file exists
+              # Clean up any previous ZAP containers
+              docker rm -f "${ZAP_CONTAINER}" >/dev/null 2>&1 || true
+
+              echo "Starting ZAP daemon on port ${ZAP_API_PORT}..."
+              docker run -d --name "${ZAP_CONTAINER}" --network "${DOCKER_NET}" \
+                -p ${ZAP_API_PORT}:8090 \
+                zaproxy/zap-stable \
+                zap.sh -daemon -host 0.0.0.0 -port 8090 \
+                       -config api.disablekey=true \
+                       -config api.addrs.addr.name=.* \
+                       -config api.addrs.addr.regex=true
+
+              # Wait for ZAP to be ready
+              echo "Waiting for ZAP API to become ready..."
+              RETRY=0
+              while [ $RETRY -lt 30 ]; do
+                if curl -s "http://localhost:${ZAP_API_PORT}/JSON/core/view/version/" >/dev/null 2>&1; then
+                  echo "✓ ZAP API is ready"
+                  break
+                fi
+                RETRY=$((RETRY + 1))
+                sleep 2
+                if [ $RETRY -eq 30 ]; then
+                  echo "ERROR: ZAP did not start in time"
+                  docker logs "${ZAP_CONTAINER}" || true
+                  exit 1
+                fi
+              done
+
+              # Pre-warm endpoints
               if [ -f "${ENDPOINTS_FILE}" ]; then
-                echo "Pre-warming endpoints from ${ENDPOINTS_FILE}..."
+                echo "Pre-warming endpoints..."
                 while IFS= read -r path || [ -n "$path" ]; do
-                  # Skip empty lines and comments
                   if [ -z "$path" ] || echo "$path" | grep -q "^[[:space:]]*#"; then
                     continue
                   fi
-
                   full_url="${TARGET_BASE%/}${path}"
-                  docker run --rm --network "${DOCKER_NET}" curlimages/curl:8.10.1 \
-                    -s -o /dev/null -w "WARM %{http_code} ${full_url}\n" \
-                    "${full_url}" || true
-                  sleep 0.05
+                  curl -s -o /dev/null "${full_url}" || true
+                  sleep 0.02
                 done < "${ENDPOINTS_FILE}"
-              else
-                echo "WARNING: ${ENDPOINTS_FILE} not found; pre-warming skipped."
               fi
 
-              # Warm base URL
-              docker run --rm --network "${DOCKER_NET}" curlimages/curl:8.10.1 \
-                -s -o /dev/null -w "WARM %{http_code} ${TARGET_BASE}/\n" \
-                "${TARGET_BASE}/" || true
+              # Run spider via ZAP API
+              echo "Starting spider scan for ${SPIDER_MINUTES} minutes..."
+              SCAN_RESPONSE=$(curl -s "http://localhost:${ZAP_API_PORT}/JSON/spider/action/scan/?url=${TARGET_BASE}/")
+              SCAN_ID=$(echo "$SCAN_RESPONSE" | grep -o '"id":"[^"]*' | head -1 | cut -d'"' -f4)
 
-              # Run ZAP baseline - let it manage its own ZAP instance
-              echo "Running ZAP baseline scan (spider=${SPIDER_MINUTES}m, wait=${SCAN_WAIT_MINUTES}m)..."
-              docker run --rm --network "${DOCKER_NET}" \
-                -v "${WORKSPACE}/${REPORTS_DIR}:/zap/wrk" \
-                zaproxy/zap-stable \
-                zap-baseline.py \
-                  -t "${TARGET_BASE}/" \
-                  -g /zap/wrk/gen.conf \
-                  -J /zap/wrk/dast-report.json \
-                  -r /zap/wrk/dast-report.html \
-                  -x /zap/wrk/dast-report.xml \
-                  -j -a -m "${SPIDER_MINUTES}" -T "${SCAN_WAIT_MINUTES}" -I -d || true
+              if [ -z "$SCAN_ID" ]; then
+                echo "ERROR: Failed to start spider scan"
+                echo "Response: $SCAN_RESPONSE"
+                exit 1
+              fi
+              echo "Spider scan started with ID: ${SCAN_ID}"
+
+              # Wait for spider to complete
+              ELAPSED=0
+              MAX_TIME=$((SPIDER_MINUTES * 60))
+              while [ $ELAPSED -lt $MAX_TIME ]; do
+                STATUS=$(curl -s "http://localhost:${ZAP_API_PORT}/JSON/spider/view/status/?scanId=${SCAN_ID}" | grep -o '"status":"[^"]*' | head -1 | cut -d'"' -f4)
+                echo "Spider progress: ${STATUS}%"
+                if [ "${STATUS}" = "100" ]; then
+                  echo "✓ Spider scan completed"
+                  break
+                fi
+                sleep 10
+                ELAPSED=$((ELAPSED + 10))
+              done
+
+              # Run active scan
+              echo "Starting active scan..."
+              ASCAN_RESPONSE=$(curl -s "http://localhost:${ZAP_API_PORT}/JSON/ascan/action/scan/?url=${TARGET_BASE}/")
+              ASCAN_ID=$(echo "$ASCAN_RESPONSE" | grep -o '"id":"[^"]*' | head -1 | cut -d'"' -f4)
+
+              if [ -z "$ASCAN_ID" ]; then
+                echo "ERROR: Failed to start active scan"
+                echo "Response: $ASCAN_RESPONSE"
+                exit 1
+              fi
+              echo "Active scan started with ID: ${ASCAN_ID}"
+
+              # Wait for active scan (max 10 minutes)
+              ELAPSED=0
+              MAX_TIME=600
+              while [ $ELAPSED -lt $MAX_TIME ]; do
+                ASTATUS=$(curl -s "http://localhost:${ZAP_API_PORT}/JSON/ascan/view/status/?scanId=${ASCAN_ID}" | grep -o '"status":"[^"]*' | head -1 | cut -d'"' -f4)
+                echo "Active scan progress: ${ASTATUS}%"
+                if [ "${ASTATUS}" = "100" ]; then
+                  echo "✓ Active scan completed"
+                  break
+                fi
+                sleep 15
+                ELAPSED=$((ELAPSED + 15))
+              done
+
+              # Generate reports inside the container and copy them out
+              echo "Generating reports inside ZAP container..."
+
+              # HTML Report
+              echo "Generating HTML report..."
+              docker exec "${ZAP_CONTAINER}" bash -c \
+                "curl -s 'http://localhost:8090/JSON/core/action/htmlreport/' > /tmp/dast-report.html" || true
+
+              # JSON Report
+              echo "Generating JSON report..."
+              docker exec "${ZAP_CONTAINER}" bash -c \
+                "curl -s 'http://localhost:8090/JSON/core/action/jsonreport/' > /tmp/dast-report.json" || true
+
+              # XML Report
+              echo "Generating XML report..."
+              docker exec "${ZAP_CONTAINER}" bash -c \
+                "curl -s 'http://localhost:8090/XML/core/action/xmlreport/' > /tmp/dast-report.xml" || true
+
+              # Copy reports from container to host
+              echo "Copying reports from container..."
+              docker cp "${ZAP_CONTAINER}:/tmp/dast-report.html" "${WORKSPACE}/${REPORTS_DIR}/" || true
+              docker cp "${ZAP_CONTAINER}:/tmp/dast-report.json" "${WORKSPACE}/${REPORTS_DIR}/" || true
+              docker cp "${ZAP_CONTAINER}:/tmp/dast-report.xml" "${WORKSPACE}/${REPORTS_DIR}/" || true
+
+              # Cleanup
+              echo "Cleaning up ZAP container..."
+              docker stop "${ZAP_CONTAINER}" || true
+              docker rm "${ZAP_CONTAINER}" || true
 
               echo "Reports generated in ${WORKSPACE}/${REPORTS_DIR}:"
-              ls -lh "${WORKSPACE}/${REPORTS_DIR}" || true
+              ls -lh "${WORKSPACE}/${REPORTS_DIR}/" || true
             '''
 
             echo '✅ DAST scan completed'
           }
           post {
             always {
-              archiveArtifacts artifacts: "${REPORTS_DIR}/dast-report.json,${REPORTS_DIR}/dast-report.html",
+              archiveArtifacts artifacts: "${REPORTS_DIR}/dast-report.json,${REPORTS_DIR}/dast-report.html,${REPORTS_DIR}/dast-report.xml",
                                fingerprint: true, allowEmptyArchive: true
             }
           }
