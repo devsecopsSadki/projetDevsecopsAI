@@ -260,29 +260,26 @@ pipeline {
           steps {
             echo '🕷️ Running DAST scan with OWASP ZAP...'
             sh '''
-              TARGET_URL="http://app-container:${APP_INTERNAL_PORT}${DAST_START_PATH}"
+              TARGET_URL="http://app-container:${APP_INTERNAL_PORT}/"
               echo "Starting OWASP ZAP scan against ${TARGET_URL}"
 
-              # Ensure reports dir is mountable
               mkdir -p "${WORKSPACE}/${REPORTS_DIR}"
               chmod 777 "${WORKSPACE}/${REPORTS_DIR}"
 
-              # Preflight from SAME docker network (must be 200/302)
+              # Preflight check from SAME network (ok to keep on /actuator/health)
+              set -e
               docker run --rm --network "${DOCKER_NET}" curlimages/curl:8.10.1 \
-                -s -o /dev/null -w "%{http_code}" "${TARGET_URL}" | grep -Eq "^(200|302)$"
+                -s -o /dev/null -w "%{http_code}" \
+                "http://app-container:${APP_INTERNAL_PORT}/actuator/health" | grep -Eq '^(200|302)$'
+              set +e
 
-              # IMPORTANT:
-              # - Use -w /zap/wrk, mount reports dir there
-              # - Use FILENAMES ONLY for -J / -r / -x (zap writes to CWD)
               docker run --rm --network "${DOCKER_NET}" --user 0 -v "${WORKSPACE}/${REPORTS_DIR}:/zap/wrk/:rw" -w /zap/wrk zaproxy/zap-stable zap-baseline.py -t "${TARGET_URL}" -g /zap/wrk/gen.conf -J /zap/wrk/dast-report.json -r /zap/wrk/dast-report.html -m 10 -I -d
 
 
               echo "Verifying DAST reports..."
               ls -lh "${WORKSPACE}/${REPORTS_DIR}/dast-report.json" || echo "WARNING: JSON report not created"
               ls -lh "${WORKSPACE}/${REPORTS_DIR}/dast-report.html" || echo "WARNING: HTML report not created"
-              ls -lh "${WORKSPACE}/${REPORTS_DIR}/dast-report.xml"  || echo "WARNING: XML report not created"
             '''
-
             echo '✅ DAST scan completed'
           }
           post {
