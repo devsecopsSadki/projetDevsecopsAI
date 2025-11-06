@@ -1,3 +1,5 @@
+/
+/actuator/health
 /api/v1/satellites/getSatellites
 /api/v1/users/createUser
 /api/v1/users/addSatellite
