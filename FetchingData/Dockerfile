@@ -11,10 +11,12 @@ RUN apt-get update && apt-get install -y \
     less \
     && rm -rf /var/lib/apt/lists/*
 
-
 # Copy your app
 VOLUME /tmp
 COPY target/*.jar app.jar
 
-# Start the app
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Expose port
+EXPOSE 8082
+
+# Start the app with port configuration
+ENTRYPOINT ["java", "-jar", "app.jar", "--server.port=8082", "--server.address=0.0.0.0"]
