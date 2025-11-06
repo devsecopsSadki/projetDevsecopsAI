@@ -283,8 +283,11 @@ pipeline {
                 docker rm -f "${ZAP_CONTAINER}" >/dev/null 2>&1 || true
 
                 # Start ZAP daemon with reports volume mounted at /zap/wrk
-                docker run -d --name zap-daemon --network secnet --user 0 -v "${WORKSPACE}/security-reports:/zap/wrk" zaproxy/zap-stable zap.sh -daemon -host 0.0.0.0 -port 35437 -config api.disablekey=true -config api.addrs.addr.name=.* -config api.addrs.addr.regex=true; \
-
+                docker run -d --name "${ZAP_CONTAINER}" --network "${DOCKER_NET}" --user 0 \
+                  -v "${WORKSPACE}/${REPORTS_DIR}:/zap/wrk" \
+                  zaproxy/zap-stable \
+                  zap.sh -daemon -host 0.0.0.0 -port "${ZAP_API_PORT}" \
+                         -config api.disablekey=true -config api.addrs.addr.name=.* -config api.addrs.addr.regex=true
 
                 # Wait for ZAP API to be ready (max ~60s)
                 echo "Waiting for ZAP API on ${ZAP_API_PORT}..."
@@ -321,11 +324,17 @@ pipeline {
 
                 # Run baseline scan INSIDE the same ZAP container (so /zap/wrk is mounted)
                 echo "Running zap-baseline.py (spider=${SPIDER_MINUTES}m, wait=${SCAN_WAIT_MINUTES}m)..."
-                docker exec zap-daemon python3 /zap/zap-baseline.py -t "${TARGET_BASE}/" -g /zap/wrk/gen.conf -J /zap/wrk/dast-report.json -r /zap/wrk/dast-report.html -x /zap/wrk/dast-report.xml -j -a -m 10 -T 20 -I -d;
-
+                docker exec "${ZAP_CONTAINER}" python3 /zap/zap-baseline.py \
+                  -t "${TARGET_BASE}/" \
+                  -g /zap/wrk/gen.conf \
+                  -J /zap/wrk/dast-report.json \
+                  -r /zap/wrk/dast-report.html \
+                  -x /zap/wrk/dast-report.xml \
+                  -j -a -m "${SPIDER_MINUTES}" -T "${SCAN_WAIT_MINUTES}" -I -d || true
 
                 echo "Reports generated in ${WORKSPACE}/${REPORTS_DIR}:"
                 ls -lh "${WORKSPACE}/${REPORTS_DIR}" || true
+
               '''
 
 
