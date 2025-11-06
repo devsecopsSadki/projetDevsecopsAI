@@ -291,6 +291,7 @@ jobs:
         run: |
           TARGET_URL="http://app-container:8080"
           echo "Starting ZAP scan against ${TARGET_URL}"
+          READY_URL="http://app-container:8080/actuator/health"
           
           touch ${{ env.REPORTS_DIR }}/dast-report.json
           touch ${{ env.REPORTS_DIR }}/dast-report.html
@@ -300,7 +301,7 @@ jobs:
           
           # Preflight check
           docker run --rm --network secnet curlimages/curl:8.10.1 \
-            -s -o /dev/null -w "%{http_code}" "${TARGET_URL}" | grep -Eq '^(200|302)$'
+            -s -o /dev/null -w "%{http_code}" "${READY_URL}" | grep -Eq '^(200|302)$'
           docker run --rm \
           --network secnet \
             --user 0 \
