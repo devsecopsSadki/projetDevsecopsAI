@@ -229,20 +229,20 @@ pipeline {
         stage('DAST Analysis - ZAP Scan') {
           steps {
             echo '🕷️ Running DAST scan with OWASP ZAP...'
-            sh """
+            sh '''
               echo "Starting OWASP ZAP scan against http://elegant_lichterman:${APP_PORT}${ZAP_PATH}"
 
               # Ensure network exists
               docker network inspect "${DOCKER_NET}" >/dev/null 2>&1 || docker network create "${DOCKER_NET}"
 
-              # Ensure reports dir is writable and reports exist (prevents archive errors)
+              # Ensure reports dir is writable and files exist
               mkdir -p "${WORKSPACE}/${REPORTS_DIR}"
               chmod -R 0777 "${WORKSPACE}/${REPORTS_DIR}" || true
               touch "${WORKSPACE}/${REPORTS_DIR}/dast-report.json" "${WORKSPACE}/${REPORTS_DIR}/dast-report.html" || true
 
-              # Optional: verify the target really returns 200 before scanning
+              # Verify target returns 200/302 before scanning (avoid Groovy $ parsing by keeping this whole block single-quoted)
               set -e
-curl -s -o /dev/null -w "%{http_code}\\n" "http://elegant_lichterman:${APP_PORT}${ZAP_PATH}" | grep -E "^(200|302)\\$" || {
+              curl -s -o /dev/null -w "%{http_code}\n" "http://elegant_lichterman:${APP_PORT}${ZAP_PATH}" | grep -E '^(200|302)$' || {
                 echo "Target URL is not 200/302. Update ZAP_PATH to a page that returns 200."
                 exit 1
               }
@@ -261,7 +261,7 @@ curl -s -o /dev/null -w "%{http_code}\\n" "http://elegant_lichterman:${APP_PORT}
 
               echo "Verifying DAST report was created..."
               ls -lh "${WORKSPACE}/${REPORTS_DIR}/dast-report.json" || echo "WARNING: DAST report not created"
-            """
+            '''
             echo 'DAST scan completed'
           }
           post {
@@ -272,6 +272,7 @@ curl -s -o /dev/null -w "%{http_code}\\n" "http://elegant_lichterman:${APP_PORT}
             }
           }
         }
+
 
 
 
