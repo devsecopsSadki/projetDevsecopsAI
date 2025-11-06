@@ -261,154 +261,170 @@ pipeline {
             echo '🕷️ Running DAST scan with OWASP ZAP...'
 
             sh '''
-             #!/usr/bin/env bash
-             set -eu
+             stage('DAST Analysis - ZAP Scan') {
+               steps {
+                 echo '🕷️ Running DAST scan with OWASP ZAP...'
 
-             # ------------ Config ------------
-             DOCKER_NET="${DOCKER_NET:-secnet}"
-             WORKSPACE="${WORKSPACE:-$PWD}"
-             REPORTS_DIR="${REPORTS_DIR:-security-reports}"
-             ENDPOINTS_FILE="${ENDPOINTS_FILE:-${WORKSPACE}/endpoints.txt}"
+                 sh '''
+                   #!/usr/bin/env bash
+                   set -eu
 
-             # Your app inside the Docker network
-             TARGET_BASE="${TARGET_BASE:-http://app-container:8080}"
+                   # ------------ Config ------------
+                   DOCKER_NET="${DOCKER_NET:-secnet}"
+                   WORKSPACE="${WORKSPACE:-$PWD}"
+                   REPORTS_DIR="${REPORTS_DIR:-security-reports}"
+                   ENDPOINTS_FILE="${ENDPOINTS_FILE:-${WORKSPACE}/endpoints.txt}"
 
-             # ZAP daemon container + API port
-             ZAP_CONTAINER="${ZAP_CONTAINER:-zap-scan}"
-             ZAP_API_PORT="${ZAP_API_PORT:-8090}"
+                   # Your app inside the Docker network
+                   TARGET_BASE="${TARGET_BASE:-http://app-container:8080}"
 
-             # Spider duration (minutes) and Active scan max wait (seconds)
-             SPIDER_MINUTES="${SPIDER_MINUTES:-5}"
-             ASCAN_MAX_SECONDS="${ASCAN_MAX_SECONDS:-600}"
-             # --------------------------------
+                   # ZAP daemon container + API port
+                   ZAP_CONTAINER="${ZAP_CONTAINER:-zap-scan}"
+                   ZAP_API_PORT="${ZAP_API_PORT:-8090}"
 
-             mkdir -p "${WORKSPACE}/${REPORTS_DIR}"
+                   # Spider duration (minutes) and Active scan max wait (seconds)
+                   SPIDER_MINUTES="${SPIDER_MINUTES:-5}"
+                   ASCAN_MAX_SECONDS="${ASCAN_MAX_SECONDS:-600}"
+                   # --------------------------------
 
-             # Clean any old ZAP container
-             docker rm -f "${ZAP_CONTAINER}" >/dev/null 2>&1 || true
+                   mkdir -p "${WORKSPACE}/${REPORTS_DIR}"
 
-             echo "Starting ZAP daemon on port ${ZAP_API_PORT}..."
-             docker run -d --name "${ZAP_CONTAINER}" \
-               --network "${DOCKER_NET}" \
-               -p "${ZAP_API_PORT}:8090" \
-               zaproxy/zap-stable \
-               zap.sh -daemon -host 0.0.0.0 -port 8090 \
-                      -config api.disablekey=true \
-                      -config api.addrs.addr.name=.* \
-                      -config api.addrs.addr.regex=true
+                   # Clean any old ZAP container
+                   docker rm -f "${ZAP_CONTAINER}" >/dev/null 2>&1 || true
 
-             # Wait for ZAP API to be ready (use a curl container on the same network)
-             echo "Waiting for ZAP API to become ready..."
-             RETRY=0
-             while [ "$RETRY" -lt 30 ]; do
-               if docker run --rm --network "${DOCKER_NET}" curlimages/curl:8.10.1 \
-                    -s "http://${ZAP_CONTAINER}:8090/JSON/core/view/version/" >/dev/null 2>&1; then
-                 echo "✓ ZAP API is ready"
-                 break
-               fi
-               RETRY=$((RETRY + 1))
-               sleep 2
-               if [ "$RETRY" -eq 30 ]; then
-                 echo "ERROR: ZAP did not start in time"
-                 docker logs "${ZAP_CONTAINER}" || true
-                 exit 1
-               fi
-             done
+                   echo "Starting ZAP daemon on port ${ZAP_API_PORT}..."
+                   docker run -d --name "${ZAP_CONTAINER}" \\
+                     --network "${DOCKER_NET}" \\
+                     -p "${ZAP_API_PORT}:8090" \\
+                     zaproxy/zap-stable \\
+                     zap.sh -daemon -host 0.0.0.0 -port 8090 \\
+                            -config api.disablekey=true \\
+                            -config api.addrs.addr.name=.* \\
+                            -config api.addrs.addr.regex=true
 
-             # Pre-warm endpoints THROUGH the ZAP proxy so ZAP learns them
-             if [ -f "${ENDPOINTS_FILE}" ]; then
-               echo "Pre-warming endpoints via ZAP proxy (${ZAP_CONTAINER}:${ZAP_API_PORT})..."
-               while IFS= read -r path || [ -n "$path" ]; do
-                 # skip empty or comment lines
-                 [ -z "$path" ] && continue
-                 echo "$path" | grep -q "^[[:space:]]*#" && continue
+                   # Wait for ZAP API to be ready (use a curl container on the same network)
+                   echo "Waiting for ZAP API to become ready..."
+                   RETRY=0
+                   while [ "$RETRY" -lt 30 ]; do
+                     if docker run --rm --network "${DOCKER_NET}" curlimages/curl:8.10.1 \\
+                          -s "http://${ZAP_CONTAINER}:8090/JSON/core/view/version/" >/dev/null 2>&1; then
+                       echo "✓ ZAP API is ready"
+                       break
+                     fi
+                     RETRY=$((RETRY + 1))
+                     sleep 2
+                     if [ "$RETRY" -eq 30 ]; then
+                       echo "ERROR: ZAP did not start in time"
+                       docker logs "${ZAP_CONTAINER}" || true
+                       exit 1
+                     fi
+                   done
 
-                 # allow absolute and relative entries
-                 case "$path" in
-                   http://*|https://*) full_url="$path" ;;
-                   /*)                 full_url="${TARGET_BASE%/}${path}" ;;
-                   *)                  full_url="${TARGET_BASE%/}/$path" ;;
-                 esac
+                   # Pre-warm endpoints THROUGH the ZAP proxy so ZAP learns them
+                   if [ -f "${ENDPOINTS_FILE}" ]; then
+                     echo "Pre-warming endpoints via ZAP proxy (${ZAP_CONTAINER}:${ZAP_API_PORT})..."
+                     while IFS= read -r path || [ -n "$path" ]; do
+                       # skip empty or comment lines
+                       [ -z "$path" ] && continue
+                       echo "$path" | grep -q "^[[:space:]]*#" && continue
 
-                 # hit through the proxy so requests are captured by ZAP
-                 docker run --rm --network "${DOCKER_NET}" curlimages/curl:8.10.1 \
-                   -s -o /dev/null -x "http://${ZAP_CONTAINER}:8090" "$full_url" || true
-                 # tiny delay to avoid hammering
-                 sleep 0.02
-               done < "${ENDPOINTS_FILE}"
-             fi
+                       # allow absolute and relative entries
+                       case "$path" in
+                         http://*|https://*) full_url="$path" ;;
+                         /*)                 full_url="${TARGET_BASE%/}${path}" ;;
+                         *)                  full_url="${TARGET_BASE%/}/$path" ;;
+                       esac
 
-             # Start spider for SPIDER_MINUTES
-             echo "Starting spider scan for ${SPIDER_MINUTES} minute(s)..."
-             SCAN_RESPONSE="$(docker run --rm --network "${DOCKER_NET}" curlimages/curl:8.10.1 \
-               -s "http://${ZAP_CONTAINER}:8090/JSON/spider/action/scan/?url=${TARGET_BASE%/}/")"
+                       # hit through the proxy so requests are captured by ZAP
+                       docker run --rm --network "${DOCKER_NET}" curlimages/curl:8.10.1 \\
+                         -s -o /dev/null -x "http://${ZAP_CONTAINER}:8090" "$full_url" || true
+                       # tiny delay to avoid hammering
+                       sleep 0.02
+                     done < "${ENDPOINTS_FILE}"
+                   fi
 
-             # Parse {"scan":"<id>"} safely with sed (no jq dependency)
-             SCAN_ID="$(printf '%s' "$SCAN_RESPONSE" | sed -n 's/.*"scan":"\([0-9]\+\)".*/\1/p')"
-             if [ -z "${SCAN_ID:-}" ]; then
-               echo "ERROR: Failed to start spider scan"
-               echo "Response: $SCAN_RESPONSE"
-               exit 1
-             fi
-             echo "Spider scan started with ID: ${SCAN_ID}"
+                   # Start spider for SPIDER_MINUTES
+                   echo "Starting spider scan for ${SPIDER_MINUTES} minute(s)..."
+                   SCAN_RESPONSE="$(docker run --rm --network "${DOCKER_NET}" curlimages/curl:8.10.1 \\
+                     -s "http://${ZAP_CONTAINER}:8090/JSON/spider/action/scan/?url=${TARGET_BASE%/}/")"
 
-             ELAPSED=0
-             MAX_TIME=$((SPIDER_MINUTES * 60))
-             while [ "$ELAPSED" -lt "$MAX_TIME" ]; do
-               STATUS="$(docker run --rm --network "${DOCKER_NET}" curlimages/curl:8.10.1 \
-                 -s "http://${ZAP_CONTAINER}:8090/JSON/spider/view/status/?scanId=${SCAN_ID}" \
-                   | sed -n 's/.*"status":"\([0-9]\+\)".*/\1/p')"
-               [ -z "$STATUS" ] && STATUS="0"
-               echo "Spider progress: ${STATUS}%"
-               [ "$STATUS" = "100" ] && { echo "✓ Spider scan completed"; break; }
-               sleep 10
-               ELAPSED=$((ELAPSED + 10))
-             done
+                   # Parse {"scan":"<id>"} safely with sed (no jq dependency)
+                   SCAN_ID="$(printf '%s' "$SCAN_RESPONSE" | sed -n 's/.*"scan":"\\([0-9]\\+\\)".*/\\1/p')"
+                   if [ -z "${SCAN_ID:-}" ]; then
+                     echo "ERROR: Failed to start spider scan"
+                     echo "Response: $SCAN_RESPONSE"
+                     exit 1
+                   fi
+                   echo "Spider scan started with ID: ${SCAN_ID}"
 
-             # Start Active Scan (quick, against base URL)
-             echo "Starting active scan..."
-             ASCAN_RESPONSE="$(docker run --rm --network "${DOCKER_NET}" curlimages/curl:8.10.1 \
-               -s "http://${ZAP_CONTAINER}:8090/JSON/ascan/action/scan/?url=${TARGET_BASE%/}/")"
+                   ELAPSED=0
+                   MAX_TIME=$((SPIDER_MINUTES * 60))
+                   while [ "$ELAPSED" -lt "$MAX_TIME" ]; do
+                     STATUS="$(docker run --rm --network "${DOCKER_NET}" curlimages/curl:8.10.1 \\
+                       -s "http://${ZAP_CONTAINER}:8090/JSON/spider/view/status/?scanId=${SCAN_ID}" \\
+                         | sed -n 's/.*"status":"\\([0-9]\\+\\)".*/\\1/p')"
+                     [ -z "$STATUS" ] && STATUS="0"
+                     echo "Spider progress: ${STATUS}%"
+                     [ "$STATUS" = "100" ] && { echo "✓ Spider scan completed"; break; }
+                     sleep 10
+                     ELAPSED=$((ELAPSED + 10))
+                   done
 
-             ASCAN_ID="$(printf '%s' "$ASCAN_RESPONSE" | sed -n 's/.*"scan":"\([0-9]\+\)".*/\1/p')"
-             if [ -z "${ASCAN_ID:-}" ]; then
-               echo "ERROR: Failed to start active scan"
-               echo "Response: $ASCAN_RESPONSE"
-               exit 1
-             fi
-             echo "Active scan started with ID: ${ASCAN_ID}"
+                   # Start Active Scan (quick, against base URL)
+                   echo "Starting active scan..."
+                   ASCAN_RESPONSE="$(docker run --rm --network "${DOCKER_NET}" curlimages/curl:8.10.1 \\
+                     -s "http://${ZAP_CONTAINER}:8090/JSON/ascan/action/scan/?url=${TARGET_BASE%/}/")"
 
-             ELAPSED=0
-             while [ "$ELAPSED" -lt "$ASCAN_MAX_SECONDS" ]; do
-               ASTATUS="$(docker run --rm --network "${DOCKER_NET}" curlimages/curl:8.10.1 \
-                 -s "http://${ZAP_CONTAINER}:8090/JSON/ascan/view/status/?scanId=${ASCAN_ID}" \
-                   | sed -n 's/.*"status":"\([0-9]\+\)".*/\1/p')"
-               [ -z "$ASTATUS" ] && ASTATUS="0"
-               echo "Active scan progress: ${ASTATUS}%"
-               [ "$ASTATUS" = "100" ] && { echo "✓ Active scan completed"; break; }
-               sleep 15
-               ELAPSED=$((ELAPSED + 15))
-             done
+                   ASCAN_ID="$(printf '%s' "$ASCAN_RESPONSE" | sed -n 's/.*"scan":"\\([0-9]\\+\\)".*/\\1/p')"
+                   if [ -z "${ASCAN_ID:-}" ]; then
+                     echo "ERROR: Failed to start active scan"
+                     echo "Response: $ASCAN_RESPONSE"
+                     exit 1
+                   fi
+                   echo "Active scan started with ID: ${ASCAN_ID}"
 
-             # Generate reports INSIDE the container using the OTHER endpoints
-             echo "Generating reports inside ZAP container..."
-             docker exec "${ZAP_CONTAINER}" sh -c "wget -qO /tmp/dast-report.html http://localhost:8090/OTHER/core/other/htmlreport/"
-             docker exec "${ZAP_CONTAINER}" sh -c "wget -qO /tmp/dast-report.json http://localhost:8090/OTHER/core/other/jsonreport/"
-             docker exec "${ZAP_CONTAINER}" sh -c "wget -qO /tmp/dast-report.xml  http://localhost:8090/OTHER/core/other/xmlreport/"
+                   ELAPSED=0
+                   while [ "$ELAPSED" -lt "$ASCAN_MAX_SECONDS" ]; do
+                     ASTATUS="$(docker run --rm --network "${DOCKER_NET}" curlimages/curl:8.10.1 \\
+                       -s "http://${ZAP_CONTAINER}:8090/JSON/ascan/view/status/?scanId=${ASCAN_ID}" \\
+                         | sed -n 's/.*"status":"\\([0-9]\\+\\)".*/\\1/p')"
+                     [ -z "$ASTATUS" ] && ASTATUS="0"
+                     echo "Active scan progress: ${ASTATUS}%"
+                     [ "$ASTATUS" = "100" ] && { echo "✓ Active scan completed"; break; }
+                     sleep 15
+                     ELAPSED=$((ELAPSED + 15))
+                   done
 
-             # Copy reports out
-             echo "Copying reports to ${WORKSPACE}/${REPORTS_DIR}..."
-             docker cp "${ZAP_CONTAINER}:/tmp/dast-report.html" "${WORKSPACE}/${REPORTS_DIR}/" || true
-             docker cp "${ZAP_CONTAINER}:/tmp/dast-report.json" "${WORKSPACE}/${REPORTS_DIR}/" || true
-             docker cp "${ZAP_CONTAINER}:/tmp/dast-report.xml"  "${WORKSPACE}/${REPORTS_DIR}/" || true
+                   # Generate reports INSIDE the container using the OTHER endpoints
+                   echo "Generating reports inside ZAP container..."
+                   docker exec "${ZAP_CONTAINER}" sh -c "wget -qO /tmp/dast-report.html http://localhost:8090/OTHER/core/other/htmlreport/"
+                   docker exec "${ZAP_CONTAINER}" sh -c "wget -qO /tmp/dast-report.json http://localhost:8090/OTHER/core/other/jsonreport/"
+                   docker exec "${ZAP_CONTAINER}" sh -c "wget -qO /tmp/dast-report.xml  http://localhost:8090/OTHER/core/other/xmlreport/"
 
-             # Cleanup ZAP
-             echo "Cleaning up ZAP container..."
-             docker stop "${ZAP_CONTAINER}" >/dev/null 2>&1 || true
-             docker rm   "${ZAP_CONTAINER}" >/dev/null 2>&1 || true
+                   # Copy reports out
+                   echo "Copying reports to ${WORKSPACE}/${REPORTS_DIR}..."
+                   docker cp "${ZAP_CONTAINER}:/tmp/dast-report.html" "${WORKSPACE}/${REPORTS_DIR}/" || true
+                   docker cp "${ZAP_CONTAINER}:/tmp/dast-report.json" "${WORKSPACE}/${REPORTS_DIR}/" || true
+                   docker cp "${ZAP_CONTAINER}:/tmp/dast-report.xml"  "${WORKSPACE}/${REPORTS_DIR}/" || true
 
-             echo "Reports generated:"
-             ls -lh "${WORKSPACE}/${REPORTS_DIR}" || true
+                   # Cleanup ZAP
+                   echo "Cleaning up ZAP container..."
+                   docker stop "${ZAP_CONTAINER}" >/dev/null 2>&1 || true
+                   docker rm   "${ZAP_CONTAINER}" >/dev/null 2>&1 || true
+
+                   echo "Reports generated:"
+                   ls -lh "${WORKSPACE}/${REPORTS_DIR}" || true
+                 '''
+
+                 echo '✅ DAST scan completed'
+               }
+               post {
+                 always {
+                   archiveArtifacts artifacts: "${REPORTS_DIR}/dast-report.json,${REPORTS_DIR}/dast-report.html,${REPORTS_DIR}/dast-report.xml",
+                                    fingerprint: true, allowEmptyArchive: true
+                 }
+               }
+             }
             '''
 
             echo '✅ DAST scan completed'
