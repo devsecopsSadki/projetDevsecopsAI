@@ -1,20 +1,6 @@
-FROM openjdk:21-slim
-
-# Install debugging tools
-RUN apt-get update && apt-get install -y \
-    netcat-openbsd \
-    telnet \
-    dnsutils \
-    iputils-ping \
-    curl \
-    vim \
-    less \
-    && rm -rf /var/lib/apt/lists/*
-
-
-# Copy your app
-VOLUME /tmp
+# FetchingData/Dockerfile
+FROM eclipse-temurin:21-jre-jammy
+WORKDIR /app
 COPY target/*.jar app.jar
-
-# Start the app
-ENTRYPOINT ["java", "-jar", "app.jar"]
+EXPOSE 8080
+ENTRYPOINT ["java","-jar","/app/app.jar"]
