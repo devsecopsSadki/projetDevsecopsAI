@@ -165,7 +165,8 @@ pipeline {
                 echo "🐳 Building Docker image for application..."
                 dir('FetchingData') {
                     sh '''
-                        docker build -t my-app:latest .
+                       docker build --no-cache -t my-app:latest .
+
                         echo "✅ Docker image built successfully"
                     '''
                 }
