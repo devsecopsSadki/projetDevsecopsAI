@@ -296,11 +296,17 @@ jobs:
           touch ${{ env.REPORTS_DIR }}/dast-report.html
           chmod 666 ${{ env.REPORTS_DIR }}/dast-report.*
           
+          cat <<EOF > ${{ env.REPORTS_DIR }}/endpoints.txt
+          /api/v1/satellites/getSatellites
+          /api/v1/users/createUser
+          /api/v1/users/addSatellite
+          /api/v1/users/getUser/1
+          /api/v1/users/stallitesTrackeByUser/test@example.com
+          EOF
+          
           # Preflight check
           docker run --rm --network ${{ env.DOCKER_NET }} curlimages/curl:8.10.1 \
-            -s -o /dev/null -w "%{http_code}" "${TARGET_URL}" | grep -Eq '^(200|302)$'
-          
-          # Run ZAP scan
+            -s -o /dev/null -w "%{http_code}" "${TARGET_URL}${{ env.ZAP_PATH }}" | grep -Eq '^(200|302)$'
           docker run --rm \
             --network ${{ env.DOCKER_NET }} \
             --user 0 \
@@ -308,11 +314,12 @@ jobs:
             -w /zap/wrk \
             zaproxy/zap-stable zap-baseline.py \
               -t "${TARGET_URL}" \
-              -g gen.conf \
+              -u endpoints.txt \
               -J dast-report.json \
               -r dast-report.html \
               -m 5 \
               -I || true
+          
           
           echo "Verifying reports..."
           ls -lh ${{ env.REPORTS_DIR }}/dast-report.json || echo "WARNING: JSON not created"
