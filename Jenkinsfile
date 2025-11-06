@@ -289,11 +289,12 @@ pipeline {
                        -config api.addrs.addr.name=.* \
                        -config api.addrs.addr.regex=true
 
-              # Wait for ZAP to be ready
+              # Wait for ZAP to be ready using container network
               echo "Waiting for ZAP API to become ready..."
               RETRY=0
               while [ $RETRY -lt 30 ]; do
-                if curl -s "http://localhost:${ZAP_API_PORT}/JSON/core/view/version/" >/dev/null 2>&1; then
+                if docker run --rm --network "${DOCKER_NET}" curlimages/curl:8.10.1 \
+                  -s "http://${ZAP_CONTAINER}:8090/JSON/core/view/version/" >/dev/null 2>&1; then
                   echo "✓ ZAP API is ready"
                   break
                 fi
@@ -319,9 +320,10 @@ pipeline {
                 done < "${ENDPOINTS_FILE}"
               fi
 
-              # Run spider via ZAP API
+              # Run spider via ZAP API (using container network)
               echo "Starting spider scan for ${SPIDER_MINUTES} minutes..."
-              SCAN_RESPONSE=$(curl -s "http://localhost:${ZAP_API_PORT}/JSON/spider/action/scan/?url=${TARGET_BASE}/")
+              SCAN_RESPONSE=$(docker run --rm --network "${DOCKER_NET}" curlimages/curl:8.10.1 \
+                -s "http://${ZAP_CONTAINER}:8090/JSON/spider/action/scan/?url=${TARGET_BASE}/")
               SCAN_ID=$(echo "$SCAN_RESPONSE" | grep -o '"id":"[^"]*' | head -1 | cut -d'"' -f4)
 
               if [ -z "$SCAN_ID" ]; then
@@ -335,7 +337,8 @@ pipeline {
               ELAPSED=0
               MAX_TIME=$((SPIDER_MINUTES * 60))
               while [ $ELAPSED -lt $MAX_TIME ]; do
-                STATUS=$(curl -s "http://localhost:${ZAP_API_PORT}/JSON/spider/view/status/?scanId=${SCAN_ID}" | grep -o '"status":"[^"]*' | head -1 | cut -d'"' -f4)
+                STATUS=$(docker run --rm --network "${DOCKER_NET}" curlimages/curl:8.10.1 \
+                  -s "http://${ZAP_CONTAINER}:8090/JSON/spider/view/status/?scanId=${SCAN_ID}" | grep -o '"status":"[^"]*' | head -1 | cut -d'"' -f4)
                 echo "Spider progress: ${STATUS}%"
                 if [ "${STATUS}" = "100" ]; then
                   echo "✓ Spider scan completed"
@@ -347,7 +350,8 @@ pipeline {
 
               # Run active scan
               echo "Starting active scan..."
-              ASCAN_RESPONSE=$(curl -s "http://localhost:${ZAP_API_PORT}/JSON/ascan/action/scan/?url=${TARGET_BASE}/")
+              ASCAN_RESPONSE=$(docker run --rm --network "${DOCKER_NET}" curlimages/curl:8.10.1 \
+                -s "http://${ZAP_CONTAINER}:8090/JSON/ascan/action/scan/?url=${TARGET_BASE}/")
               ASCAN_ID=$(echo "$ASCAN_RESPONSE" | grep -o '"id":"[^"]*' | head -1 | cut -d'"' -f4)
 
               if [ -z "$ASCAN_ID" ]; then
@@ -361,7 +365,8 @@ pipeline {
               ELAPSED=0
               MAX_TIME=600
               while [ $ELAPSED -lt $MAX_TIME ]; do
-                ASTATUS=$(curl -s "http://localhost:${ZAP_API_PORT}/JSON/ascan/view/status/?scanId=${ASCAN_ID}" | grep -o '"status":"[^"]*' | head -1 | cut -d'"' -f4)
+                ASTATUS=$(docker run --rm --network "${DOCKER_NET}" curlimages/curl:8.10.1 \
+                  -s "http://${ZAP_CONTAINER}:8090/JSON/ascan/view/status/?scanId=${ASCAN_ID}" | grep -o '"status":"[^"]*' | head -1 | cut -d'"' -f4)
                 echo "Active scan progress: ${ASTATUS}%"
                 if [ "${ASTATUS}" = "100" ]; then
                   echo "✓ Active scan completed"
