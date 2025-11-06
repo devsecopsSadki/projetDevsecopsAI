@@ -303,17 +303,17 @@ jobs:
           docker run --rm --network secnet curlimages/curl:8.10.1 \
             -s -o /dev/null -w "%{http_code}" "${READY_URL}" | grep -Eq '^(200|302)$'
           docker run --rm \
-          --network secnet \
+            --network secnet \
             --user 0 \
-            -v "$PWD:/zap/wrk/:rw" \
-          -w /zap/wrk \
-          zaproxy/zap-stable zap-baseline.py \
-          -t "${TARGET_URL}" \
-          -u endpoints.txt \
-          -J dast-report.json \
-          -r dast-report.html \
-          -m 5 \
-          -I || true
+            -v "$PWD/${{ env.REPORTS_DIR }}:/zap/wrk/:rw" \
+            -w /zap/wrk \
+            zaproxy/zap-stable zap-baseline.py \
+            -t "${TARGET_URL}" \
+            -u /zap/wrk/endpoints.txt \
+            -J dast-report.json \
+            -r dast-report.html \
+            -m 5 \
+            -I || true
   
   
 
