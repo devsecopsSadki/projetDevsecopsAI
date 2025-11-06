@@ -173,65 +173,67 @@ pipeline {
             }
         }
 
-        stage('Start Application in Docker') {
+        stage('Build Docker Image') {
             steps {
-                echo "🚀 Starting application in Docker container on network ${DOCKER_NET}..."
-                sh '''
-                    # Ensure shared network exists
-                    docker network inspect "${DOCKER_NET}" >/dev/null 2>&1 || docker network create "${DOCKER_NET}"
-                    
-                    # Stop and remove any existing app container
-                    docker stop app-container 2>/dev/null || true
-                    docker rm app-container 2>/dev/null || true
-                    
-                    # Find the JAR file
-                    ARTIFACT=$(ls FetchingData/target/*.jar 2>/dev/null | head -n1 || true)
-                    if [ -z "$ARTIFACT" ]; then
-                        echo "ERROR: No jar found in FetchingData/target/"
-                        exit 1
-                    fi
-                    
-                    echo "Found artifact: $ARTIFACT"
-                    
-                    # Run app in Docker container on the shared network
-                    # Using Eclipse Temurin (OpenJDK) image
-                    docker run -d \
-                        --name app-container \
-                        --network "${DOCKER_NET}" \
-                        -p ${APP_PORT}:${APP_PORT} \
-                        -v "${WORKSPACE}/FetchingData/target:/app:ro" \
-                        eclipse-temurin:17-jre-alpine \
-                        java -jar /app/$(basename $ARTIFACT) --server.port=${APP_PORT} --server.address=0.0.0.0
-                    
-                    echo "Container started, waiting for app to be ready..."
-                    
-                    # Wait for app to be ready (check from Jenkins side via published port)
-                    READY=0
-                    for i in $(seq 1 60); do
-                        if curl -fsS "http://localhost:${APP_PORT}/actuator/health" >/dev/null 2>&1; then
-                            READY=1
-                            echo "✓ App is ready on /actuator/health"
-                            break
-                        elif curl -fsS "http://localhost:${APP_PORT}/" >/dev/null 2>&1; then
-                            READY=1
-                            echo "✓ App is ready on /"
-                            break
-                        fi
-                        echo "Waiting... ($i/60)"
-                        sleep 2
-                    done
-                    
-                    if [ "$READY" -ne 1 ]; then
-                        echo "❌ App did not become ready in time"
-                        echo "Container logs:"
-                        docker logs app-container
-                        exit 1
-                    fi
-                    
-                    echo "✅ App is running in container on network ${DOCKER_NET}"
-                '''
+                echo "🐳 Building Docker image for application..."
+                dir('FetchingData') {
+                    sh '''
+                        # Build the Docker image using your Dockerfile
+                        docker build -t my-app:latest .
+                        echo "✅ Docker image built successfully"
+                    '''
+                }
             }
         }
+
+        stage('Start Application in Docker') {
+    steps {
+        echo "🚀 Starting application in Docker container on network ${DOCKER_NET}..."
+        sh '''
+            # Ensure shared network exists
+            docker network inspect "${DOCKER_NET}" >/dev/null 2>&1 || docker network create "${DOCKER_NET}"
+            
+            # Stop and remove any existing app container
+            docker stop app-container 2>/dev/null || true
+            docker rm app-container 2>/dev/null || true
+            
+            # Run your custom Docker image
+            docker run -d \
+                --name app-container \
+                --network "${DOCKER_NET}" \
+                -p ${APP_PORT}:${APP_PORT} \
+                -e SERVER_PORT=${APP_PORT} \
+                my-app:latest
+            
+            echo "Container started, waiting for app to be ready..."
+            
+            # Wait for app to be ready
+            READY=0
+            for i in $(seq 1 60); do
+                if curl -fsS "http://localhost:${APP_PORT}/actuator/health" >/dev/null 2>&1; then
+                    READY=1
+                    echo "✓ App is ready on /actuator/health"
+                    break
+                elif curl -fsS "http://localhost:${APP_PORT}/" >/dev/null 2>&1; then
+                    READY=1
+                    echo "✓ App is ready on /"
+                    break
+                fi
+                echo "Waiting... ($i/60)"
+                sleep 2
+            done
+            
+            if [ "$READY" -ne 1 ]; then
+                echo "❌ App did not become ready in time"
+                echo "Container logs:"
+                docker logs app-container
+                exit 1
+            fi
+            
+            echo "✅ App is running in container on network ${DOCKER_NET}"
+        '''
+    }
+}
 
         // ==================== OPTIONAL: Debug network connectivity ====================
         stage('Debug - Verify Network Connectivity') {
