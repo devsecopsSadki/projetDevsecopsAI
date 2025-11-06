@@ -238,23 +238,18 @@ pipeline {
               # Ensure reports dir is writable and files exist
               mkdir -p "${WORKSPACE}/${REPORTS_DIR}"
               chmod -R 0777 "${WORKSPACE}/${REPORTS_DIR}" || true
-              : > "${WORKSPACE}/${REPORTS_DIR}/dast-report.json"
-              : > "${WORKSPACE}/${REPORTS_DIR}/dast-report.html"
+              touch "${WORKSPACE}/${REPORTS_DIR}/dast-report.json" "${WORKSPACE}/${REPORTS_DIR}/dast-report.html" || true
 
-              # PRECHECK: consider app 'up' if it returns 200, 301, 302 or 401 (secured endpoint)
+              # Verify target returns 200/302 before scanning
               set -e
-              CODE=$(curl -sS -o /dev/null -w "%{http_code}" "http://elegant_lichterman:${APP_PORT}${ZAP_PATH}")
-              echo "Precheck HTTP code: $CODE"
-              echo "$CODE" | grep -E '^(200|301|302|401)$' >/dev/null || {
-                echo "Target URL not ready (expected 200/301/302/401): got $CODE"
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://elegant_lichterman:${APP_PORT}${ZAP_PATH}")
+              if ! echo "$HTTP_CODE" | grep -qE '^(200|302)$'; then
+                echo "Target URL returned HTTP $HTTP_CODE. Update ZAP_PATH to a page that returns 200."
                 exit 1
-              }
+              fi
               set +e
 
-              # Pull ZAP image explicitly (avoid first-run pull failures)
-              docker pull zaproxy/zap-stable
-
-              # Run ZAP baseline and write into the mounted folder
+              # Run ZAP (as root to avoid write issues) and write into the mounted folder
               docker run --rm \
                 --network "${DOCKER_NET}" \
                 --user 0 \
@@ -278,8 +273,6 @@ pipeline {
             }
           }
         }
-
-
 
 
 
