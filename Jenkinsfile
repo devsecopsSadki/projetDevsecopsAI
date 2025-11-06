@@ -10,7 +10,7 @@ pipeline {
       DOCKER_NET        = 'secnet'
       APP_INTERNAL_PORT = '8080'   // port INSIDE the app container
       APP_HOST_PORT     = '8082'   // port on your Windows host
-      ZAP_PATH          = '/'      // or '/actuator/health' if it exists and returns 200
+      ZAP_PATH          = '/actuator/health'      // or '/actuator/health' if it exists and returns 200
     }
 
     stages {
