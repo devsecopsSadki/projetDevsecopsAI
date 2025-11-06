@@ -1,4 +1,0 @@
-Résumé SAST — formaté pour LLM
-Chaque entrée: Title, Location, Description, Recommendation
-
-Aucune vulnérabilité SAST trouvée.
