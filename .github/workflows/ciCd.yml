@@ -292,30 +292,28 @@ jobs:
           TARGET_URL="http://app-container:8080"
           echo "Starting ZAP scan against ${TARGET_URL}"
           READY_URL="http://app-container:8080/actuator/health"
-          
+
           touch ${{ env.REPORTS_DIR }}/dast-report.json
           touch ${{ env.REPORTS_DIR }}/dast-report.html
           chmod 666 ${{ env.REPORTS_DIR }}/dast-report.*
-          
-          
-          
+
           # Preflight check
           docker run --rm --network secnet curlimages/curl:8.10.1 \
             -s -o /dev/null -w "%{http_code}" "${READY_URL}" | grep -Eq '^(200|302)$'
+
+          # Run ZAP API scan with OpenAPI specification
           docker run --rm \
             --network secnet \
             --user 0 \
             -v "$PWD/${{ env.REPORTS_DIR }}:/zap/wrk/:rw" \
             -w /zap/wrk \
-            zaproxy/zap-stable zap-baseline.py \
+            zaproxy/zap-stable zap-api-scan.py \
             -t "${TARGET_URL}" \
-            -u /zap/wrk/endpoints.txt \
+            -f openapi \
+            -u http://app-container:8080/v3/api-docs \
             -J dast-report.json \
             -r dast-report.html \
-            -m 5 \
             -I || true
-  
-  
 
           echo "Verifying reports..."
           ls -lh ${{ env.REPORTS_DIR }}/dast-report.json || echo "WARNING: JSON not created"
