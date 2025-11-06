@@ -261,37 +261,32 @@ pipeline {
             echo '🕷️ Running DAST scan with OWASP ZAP...'
 
               sh '''
-                set -euo pipefail
-
+                set -eu
                 TARGET_URL="http://app-container:${APP_INTERNAL_PORT}/"
-                HEALTH_URL="${TARGET_URL%/}/actuator/health"
-                REPORTS_DIR_ABS="${WORKSPACE}/${REPORTS_DIR}"
+                echo "Starting OWASP ZAP scan against ${TARGET_URL}"
 
-                echo "Starting OWASP ZAP Baseline against ${TARGET_URL}"
+                mkdir -p "${WORKSPACE}/${REPORTS_DIR}"
+                chmod 777 "${WORKSPACE}/${REPORTS_DIR}"
 
-                # Prepare reports dir
-                mkdir -p "${REPORTS_DIR_ABS}"
-                chmod 777 "${REPORTS_DIR_ABS}"
-
-                # Preflight: same Docker network as ZAP
-                echo "Preflight health check from Docker network: ${HEALTH_URL}"
+                # preflight from the same docker network
                 docker run --rm --network "${DOCKER_NET}" curlimages/curl:8.10.1 \
-                  -s -o /dev/null -w "%{http_code}" "${HEALTH_URL}" | grep -Eq '^(200|302)$'
+                  -s -o /dev/null -w "%{http_code}" "http://app-container:${APP_INTERNAL_PORT}/actuator/health" | grep -Eq '^(200|302)$'
 
-                # Sanity: ensure the mount is writable
-                docker run --rm --network "${DOCKER_NET}" \
-                  -v "${REPORTS_DIR_ABS}:/zap/wrk:rw" busybox \
-                  sh -c 'echo ok > /zap/wrk/.zap_can_write && ls -l /zap/wrk'
-
-                # Run ZAP baseline (crawl ~10 minutes; passive scan only)
-                docker run --rm --network "${DOCKER_NET}" --user 0 -v "${WORKSPACE}/${REPORTS_DIR}:/zap/wrk:rw" -w /zap/wrk zaproxy/zap-stable zap-baseline.py -t "${TARGET_URL}" -g gen.conf -J dast-report.json -r dast-report.html -x dast-report.xml -m 10 -I -d
-
+                docker run --rm --network "${DOCKER_NET}" --user 0 \
+                  -v "${WORKSPACE}/${REPORTS_DIR}:/zap/wrk:rw" -w /zap/wrk \
+                  zaproxy/zap-stable zap-baseline.py \
+                    -t "${TARGET_URL}" \
+                    -g /zap/wrk/gen.conf \
+                    -J /zap/wrk/dast-report.json \
+                    -r /zap/wrk/dast-report.html \
+                    -x /zap/wrk/dast-report.xml \
+                    -m 10 -I -d
 
                 echo "Verifying DAST reports..."
-                ls -lh "${REPORTS_DIR_ABS}/dast-report.json" || echo "WARNING: JSON report not created"
-                ls -lh "${REPORTS_DIR_ABS}/dast-report.html" || echo "WARNING: HTML report not created"
-                ls -lh "${REPORTS_DIR_ABS}/dast-report.xml" || echo "WARNING: XML report not created"
+                ls -lh "${WORKSPACE}/${REPORTS_DIR}/dast-report.json" || echo "WARNING: JSON report not created"
+                ls -lh "${WORKSPACE}/${REPORTS_DIR}/dast-report.html" || echo "WARNING: HTML report not created"
               '''
+
 
 
             echo '✅ DAST scan completed'
