@@ -7,8 +7,9 @@ pipeline {
 
     environment {
         REPORTS_DIR = 'security-reports'
-         DOCKER_NET  = 'secnet'
-            APP_PORT    = '8082'
+        DOCKER_NET  = 'secnet'
+        APP_PORT    = '8082'
+        ZAP_PATH    = '/swagger-ui/index.html'
     }
 
     stages {
@@ -229,16 +230,32 @@ pipeline {
           steps {
             echo '🕷️ Running DAST scan with OWASP ZAP...'
             sh """
-              echo "Starting OWASP ZAP scan against http://elegant_lichterman:${APP_PORT}"
+              echo "Starting OWASP ZAP scan against http://elegant_lichterman:${APP_PORT}${ZAP_PATH}"
 
-              # Ensure shared network exists
+              # Ensure network exists
               docker network inspect "${DOCKER_NET}" >/dev/null 2>&1 || docker network create "${DOCKER_NET}"
 
+              # Ensure reports dir is writable and reports exist (prevents archive errors)
+              mkdir -p "${WORKSPACE}/${REPORTS_DIR}"
+              chmod -R 0777 "${WORKSPACE}/${REPORTS_DIR}" || true
+              touch "${WORKSPACE}/${REPORTS_DIR}/dast-report.json" "${WORKSPACE}/${REPORTS_DIR}/dast-report.html" || true
+
+              # Optional: verify the target really returns 200 before scanning
+              set -e
+              curl -s -o /dev/null -w "%{http_code}\\n" "http://elegant_lichterman:${APP_PORT}${ZAP_PATH}" | grep -E "^(200|302)$" || {
+                echo "Target URL is not 200/302. Update ZAP_PATH to a page that returns 200."
+                exit 1
+              }
+              set +e
+
+              # Run ZAP (as root to avoid write issues) and write into the mounted folder
               docker run --rm \
                 --network "${DOCKER_NET}" \
+                --user 0 \
                 -v "${WORKSPACE}/${REPORTS_DIR}:/zap/wrk/:rw" \
+                -w /zap/wrk \
                 zaproxy/zap-stable zap-baseline.py \
-                  -t "http://elegant_lichterman:${APP_PORT}" \
+                  -t "http://elegant_lichterman:${APP_PORT}${ZAP_PATH}" \
                   -J dast-report.json \
                   -r dast-report.html || true
 
