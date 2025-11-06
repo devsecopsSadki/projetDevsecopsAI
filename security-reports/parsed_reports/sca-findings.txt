@@ -1,0 +1,241 @@
+============================================================
+SECURITY VULNERABILITIES SUMMARY
+============================================================
+Total Vulnerabilities: 33
+  **** Critical: 0
+  *** High: 16
+  ** Medium: 14
+  * Low: 3
+============================================================
+
+[1] *** HIGH
+Package: commons-lang:commons-lang
+Current Version: 2.6
+Fix Version: No fix available
+Issue: Uncontrolled Recursion
+CVE: CVE-2025-48924 | CVSS: 8.8
+
+[2] *** HIGH
+Package: com.thoughtworks.xstream:xstream
+Current Version: 1.4.20
+Fix Version: 1.4.21
+Issue: Deserialization of Untrusted Data
+CVE: CVE-2024-47072 | CVSS: 8.7
+
+[3] *** HIGH
+Package: org.apache.commons:commons-lang3
+Current Version: 3.17.0
+Fix Version: 3.18.0
+Issue: Uncontrolled Recursion
+CVE: CVE-2025-48924 | CVSS: 8.8
+
+[4] *** HIGH
+Package: org.apache.httpcomponents.client5:httpclient5
+Current Version: 5.4.2
+Fix Version: 5.4.3
+Issue: Improper Certificate Validation
+CVE: CVE-2025-27820 | CVSS: 8.8
+
+[5] *** HIGH
+Package: org.apache.kafka:kafka-clients
+Current Version: 3.8.1
+Fix Version: 3.9.1
+Issue: Server-side Request Forgery (SSRF)
+CVE: CVE-2025-27817 | CVSS: 8.7
+
+[6] *** HIGH
+Package: org.apache.kafka:kafka-clients
+Current Version: 3.8.1
+Fix Version: 3.9.1
+Issue: Deserialization of Untrusted Data
+CVE: CVE-2025-27819 | CVSS: 8.6
+
+[7] *** HIGH
+Package: org.apache.kafka:kafka-clients
+Current Version: 3.8.1
+Fix Version: 3.9.1
+Issue: Deserialization of Untrusted Data
+CVE: CVE-2025-27818 | CVSS: 8.5
+
+[8] *** HIGH
+Package: org.apache.tomcat.embed:tomcat-embed-core
+Current Version: 10.1.39
+Fix Version: 9.0.106
+Issue: Allocation of Resources Without Limits or Throttling
+CVE: CVE-2025-48988 | CVSS: 8.7
+
+[9] *** HIGH
+Package: org.apache.tomcat.embed:tomcat-embed-core
+Current Version: 10.1.39
+Fix Version: 9.0.107
+Issue: Integer Overflow or Wraparound
+CVE: CVE-2025-52520 | CVSS: 8.7
+
+[10] *** HIGH
+Package: org.apache.tomcat.embed:tomcat-embed-core
+Current Version: 10.1.39
+Fix Version: 9.0.107
+Issue: Allocation of Resources Without Limits or Throttling
+CVE: CVE-2025-53506 | CVSS: 8.7
+
+[11] *** HIGH
+Package: org.apache.tomcat.embed:tomcat-embed-core
+Current Version: 10.1.39
+Fix Version: 9.0.108
+Issue: Improper Resource Shutdown or Release
+CVE: CVE-2025-48989 | CVSS: 8.7
+
+[12] *** HIGH
+Package: org.apache.tomcat.embed:tomcat-embed-core
+Current Version: 10.1.39
+Fix Version: 9.0.109
+Issue: Relative Path Traversal
+CVE: CVE-2025-55752 | CVSS: 7.7
+
+[13] *** HIGH
+Package: org.apache.tomcat.embed:tomcat-embed-core
+Current Version: 10.1.39
+Fix Version: 9.0.106
+Issue: Untrusted Search Path
+CVE: CVE-2025-49124 | CVSS: 7.5
+
+[14] *** HIGH
+Package: org.apache.tomcat.embed:tomcat-embed-core
+Current Version: 10.1.39
+Fix Version: 9.0.104
+Issue: Improper Cleanup on Thrown Exception
+CVE: CVE-2025-31650 | CVSS: 8.7
+
+[15] *** HIGH
+Package: org.springframework:spring-beans
+Current Version: 6.2.5
+Fix Version: 6.2.10
+Issue: Relative Path Traversal
+CVE: CVE-2025-41242 | CVSS: 8.2
+
+[16] *** HIGH
+Package: org.springframework:spring-core
+Current Version: 6.2.5
+Fix Version: 6.2.11
+Issue: Incorrect Authorization
+CVE: CVE-2025-41249 | CVSS: 8.7
+
+[17] ** MEDIUM
+Package: ch.qos.logback:logback-core
+Current Version: 1.5.18
+Fix Version: 1.5.19
+Issue: External Initialization of Trusted Variables or Data Stores
+CVE: CVE-2025-11226 | CVSS: 5.9
+
+[18] ** MEDIUM
+Package: com.google.guava:guava
+Current Version: 14.0.1
+Fix Version: 24.1.1
+Issue: Deserialization of Untrusted Data
+CVE: CVE-2018-10237 | CVSS: 5.9
+
+[19] ** MEDIUM
+Package: commons-configuration:commons-configuration
+Current Version: 1.10
+Fix Version: No fix available
+Issue: Allocation of Resources Without Limits or Throttling
+CVE: CVE-2025-46392 | CVSS: 6.9
+
+[20] ** MEDIUM
+Package: org.apache.httpcomponents:httpclient
+Current Version: 4.5.3
+Fix Version: 4.5.13
+Issue: Improper Input Validation
+CVE: CVE-2020-13956 | CVSS: 5.3
+
+[21] ** MEDIUM
+Package: org.apache.tomcat.embed:tomcat-embed-core
+Current Version: 10.1.39
+Fix Version: 9.0.105
+Issue: Improper Handling of Case Sensitivity
+CVE: CVE-2025-46701 | CVSS: 6.3
+
+[22] ** MEDIUM
+Package: org.apache.tomcat.embed:tomcat-embed-core
+Current Version: 10.1.39
+Fix Version: 9.0.106
+Issue: Authentication Bypass Using an Alternate Path or Channel
+CVE: CVE-2025-49125 | CVSS: 6.3
+
+[23] ** MEDIUM
+Package: org.apache.tomcat.embed:tomcat-embed-core
+Current Version: 10.1.39
+Fix Version: 9.0.106
+Issue: Session Fixation
+CVE: CVE-2025-55668 | CVSS: 6.9
+
+[24] ** MEDIUM
+Package: org.apache.tomcat.embed:tomcat-embed-core
+Current Version: 10.1.39
+Fix Version: 9.0.110
+Issue: Improper Resource Shutdown or Release
+CVE: CVE-2025-61795 | CVSS: 6
+
+[25] ** MEDIUM
+Package: org.apache.tomcat.embed:tomcat-embed-core
+Current Version: 10.1.39
+Fix Version: 9.0.104
+Issue: Improper Neutralization
+CVE: CVE-2025-31651 | CVSS: 6.3
+
+[26] ** MEDIUM
+Package: org.bouncycastle:bcprov-jdk18on
+Current Version: 1.78.1
+Fix Version: 1.79
+Issue: Allocation of Resources Without Limits or Throttling
+CVE: CVE-2025-8916 | CVSS: 6.3
+
+[27] ** MEDIUM
+Package: org.springframework:spring-web
+Current Version: 6.2.5
+Fix Version: 6.1.21
+Issue: HTTP Response Splitting
+CVE: CVE-2025-41234 | CVSS: 4.5
+
+[28] ** MEDIUM
+Package: org.springframework:spring-websocket
+Current Version: 6.2.5
+Fix Version: 6.2.12
+Issue: Cross-site Request Forgery (CSRF)
+CVE: CVE-2025-41254 | CVSS: 5.1
+
+[29] ** MEDIUM
+Package: org.springframework.boot:spring-boot-actuator-autoconfigure
+Current Version: 3.4.4
+Fix Version: 3.3.11
+Issue: Improper Input Validation
+CVE: CVE-2025-22235 | CVSS: 6.9
+
+[30] ** MEDIUM
+Package: org.springframework.security:spring-security-crypto
+Current Version: 6.4.4
+Fix Version: 6.3.9
+Issue: Timing Attack
+CVE: CVE-2025-22234 | CVSS: 6.9
+
+[31] * LOW
+Package: com.google.guava:guava
+Current Version: 14.0.1
+Fix Version: 30.0-android
+Issue: Information Disclosure
+CVE: CVE-2020-8908 | CVSS: 3.3
+
+[32] * LOW
+Package: com.google.guava:guava
+Current Version: 14.0.1
+Fix Version: 32.0.0-android
+Issue: Creation of Temporary File in Directory with Insecure Permissions
+CVE: CVE-2023-2976 | CVSS: 3.3
+
+[33] * LOW
+Package: org.springframework:spring-context
+Current Version: 6.2.5
+Fix Version: 6.1.20
+Issue: Improper Handling of Case Sensitivity
+CVE: CVE-2025-22233 | CVSS: 2.3
+
