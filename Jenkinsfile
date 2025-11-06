@@ -273,15 +273,8 @@ pipeline {
 
                 # Run ZAP in a named container, write reports into container FS
                 ZAP_CONT="zap-run-$$"
-                docker run --name "${ZAP_CONT}" \
-                  --network "${DOCKER_NET}" --user 0 \
-                  zaproxy/zap-stable zap-baseline.py \
-                    -t "${TARGET_URL}" \
-                    -g /zap/wrk/gen.conf \
-                    -J /zap/wrk/dast-report.json \
-                    -r /zap/wrk/dast-report.html \
-                    -x /zap/wrk/dast-report.xml \
-                    -m 10 -I -d
+                docker run --name "${ZAP_CONT}" --network "${DOCKER_NET}" --user 0 -v "${ZAP_VOL}:/zap/wrk" zaproxy/zap-stable zap-baseline.py -t "${TARGET_URL}" -g /zap/wrk/gen.conf -J /zap/wrk/dast-report.json -r /zap/wrk/dast-report.html -x /zap/wrk/dast-report.xml -m 10 -I -d
+
 
                 # Copy reports out of the container to the workspace
                 docker cp "${ZAP_CONT}:/zap/wrk/dast-report.json" "${WORKSPACE}/${REPORTS_DIR}/" || true
