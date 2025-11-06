@@ -240,12 +240,13 @@ pipeline {
               chmod -R 0777 "${WORKSPACE}/${REPORTS_DIR}" || true
               touch "${WORKSPACE}/${REPORTS_DIR}/dast-report.json" "${WORKSPACE}/${REPORTS_DIR}/dast-report.html" || true
 
-              # Verify target returns 200/302 before scanning (avoid Groovy $ parsing by keeping this whole block single-quoted)
+              # Verify target returns 200/302 before scanning
               set -e
-              curl -s -o /dev/null -w "%{http_code}\n" "http://elegant_lichterman:${APP_PORT}${ZAP_PATH}" | grep -E '^(200|302)$' || {
-                echo "Target URL is not 200/302. Update ZAP_PATH to a page that returns 200."
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://elegant_lichterman:${APP_PORT}${ZAP_PATH}")
+              if ! echo "$HTTP_CODE" | grep -qE '^(200|302)$'; then
+                echo "Target URL returned HTTP $HTTP_CODE. Update ZAP_PATH to a page that returns 200."
                 exit 1
-              }
+              fi
               set +e
 
               # Run ZAP (as root to avoid write issues) and write into the mounted folder
@@ -272,7 +273,6 @@ pipeline {
             }
           }
         }
-
 
 
 
