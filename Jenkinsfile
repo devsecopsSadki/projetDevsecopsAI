@@ -175,6 +175,19 @@ pipeline {
 
        
 
+        stage('Build Docker Image') {
+            steps {
+                echo "🐳 Building Docker image for application..."
+                dir('FetchingData') {
+                    sh '''
+                       docker build --no-cache -t my-app:latest .
+
+                        echo "✅ Docker is is  image built successfully"
+                    '''
+                }
+            }
+        }
+
         stage('Start Application in Docker') {
             steps {
                 echo "🚀 Starting application in Docker container on network ${DOCKER_NET}..."
@@ -186,28 +199,17 @@ pipeline {
                     docker stop app-container 2>/dev/null || true
                     docker rm app-container 2>/dev/null || true
                     
-                    # Find the JAR file
-                    ARTIFACT=$(ls FetchingData/target/*.jar 2>/dev/null | head -n1 || true)
-                    if [ -z "$ARTIFACT" ]; then
-                        echo "ERROR: No jar found in FetchingData/target/"
-                        exit 1
-                    fi
-                    
-                    echo "Found artifact: $ARTIFACT"
-                    
-                    # Run app in Docker container on the shared network
-                    # Using openjdk image, mount the JAR, and run it
+                    # Run your custom Docker image
                     docker run -d \
                         --name app-container \
                         --network "${DOCKER_NET}" \
                         -p ${APP_PORT}:${APP_PORT} \
-                        -v "${WORKSPACE}/FetchingData/target:/app:ro" \
-                        openjdk:17-slim \
-                        java -jar /app/$(basename $ARTIFACT) --server.port=${APP_PORT} --server.address=0.0.0.0
+                        -e SERVER_PORT=${APP_PORT} \
+                        my-app:latest
                     
                     echo "Container started, waiting for app to be ready..."
                     
-                    # Wait for app to be ready (check from Jenkins side via published port)
+                    # Wait for app to be ready
                     READY=0
                     for i in $(seq 1 60); do
                         if curl -fsS "http://localhost:${APP_PORT}/actuator/health" >/dev/null 2>&1; then
@@ -235,7 +237,6 @@ pipeline {
             }
         }
 
-        // ==================== OPTIONAL: Debug network connectivity ====================
         stage('Debug - Verify Network Connectivity') {
             steps {
                 echo '🔍 Testing network connectivity...'
@@ -255,7 +256,6 @@ pipeline {
             }
         }
 
-        // ==================== CHANGED: Updated ZAP target to app-container ====================
         stage('DAST Analysis - ZAP Scan') {
             steps {
                 echo '🕷️ Running DAST scan with OWASP ZAP...'
@@ -300,7 +300,6 @@ pipeline {
             }
         }
 
-        // ==================== CHANGED: Stop Docker container instead of process ====================
         stage('Stop Application') {
             steps {
                 echo '🛑 Stopping application container...'
@@ -311,6 +310,7 @@ pipeline {
                 '''
             }
         }
+
 
         stage('Parse DAST Report') {
             steps {
