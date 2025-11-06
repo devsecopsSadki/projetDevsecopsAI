@@ -266,14 +266,15 @@ pipeline {
                 echo "Starting OWASP ZAP scan against ${TARGET_URL}"
 
                 mkdir -p "${WORKSPACE}/${REPORTS_DIR}"
-                chmod 777 "${WORKSPACE}/${REPORTS_DIR}"
 
-                # preflight from the same docker network
+                # Preflight: ensure target is up from SAME Docker network
                 docker run --rm --network "${DOCKER_NET}" curlimages/curl:8.10.1 \
-                  -s -o /dev/null -w "%{http_code}" "http://app-container:${APP_INTERNAL_PORT}/actuator/health" | grep -Eq '^(200|302)$'
+                  -s -o /dev/null -w "%{http_code}" "http://app-container:${APP_INTERNAL_PORT}/actuator/health" | grep -Eq "^(200|302)$"
 
-                docker run --rm --network "${DOCKER_NET}" --user 0 \
-                  -v "${WORKSPACE}/${REPORTS_DIR}:/zap/wrk:rw" -w /zap/wrk \
+                # Run ZAP in a named container, write reports into container FS
+                ZAP_CONT="zap-run-$$"
+                docker run --name "${ZAP_CONT}" \
+                  --network "${DOCKER_NET}" --user 0 \
                   zaproxy/zap-stable zap-baseline.py \
                     -t "${TARGET_URL}" \
                     -g /zap/wrk/gen.conf \
@@ -282,10 +283,20 @@ pipeline {
                     -x /zap/wrk/dast-report.xml \
                     -m 10 -I -d
 
+                # Copy reports out of the container to the workspace
+                docker cp "${ZAP_CONT}:/zap/wrk/dast-report.json" "${WORKSPACE}/${REPORTS_DIR}/" || true
+                docker cp "${ZAP_CONT}:/zap/wrk/dast-report.html" "${WORKSPACE}/${REPORTS_DIR}/" || true
+                docker cp "${ZAP_CONT}:/zap/wrk/dast-report.xml"  "${WORKSPACE}/${REPORTS_DIR}/" || true
+
+                # Always remove the container
+                docker rm -f "${ZAP_CONT}" >/dev/null 2>&1 || true
+
                 echo "Verifying DAST reports..."
                 ls -lh "${WORKSPACE}/${REPORTS_DIR}/dast-report.json" || echo "WARNING: JSON report not created"
                 ls -lh "${WORKSPACE}/${REPORTS_DIR}/dast-report.html" || echo "WARNING: HTML report not created"
+                ls -lh "${WORKSPACE}/${REPORTS_DIR}/dast-report.xml"  || echo "WARNING: XML report not created"
               '''
+
 
 
 
