@@ -2,19 +2,18 @@ pipeline {
     agent any
     tools {
         maven 'maven'
-        
     }
 
     environment {
         REPORTS_DIR = 'security-reports'
-         DOCKER_NET  = 'secnet'
-            APP_PORT    = '8082'
+        DOCKER_NET  = 'secnet'
+        APP_PORT    = '8082'
     }
 
     stages {
         stage('Preparation') {
             steps {
-                echo ' Starting DevSecOps Security Analysis Pipeline (SAST, SCA, DAST)'
+                echo '🚀 Starting DevSecOps Security Analysis Pipeline (SAST, SCA, DAST)'
                 sh '''
                     rm -rf ${REPORTS_DIR}
                     mkdir -p ${REPORTS_DIR}
@@ -25,15 +24,15 @@ pipeline {
 
         stage('Build Application') {
             steps {
-                echo ' Building application...'
+                echo '📦 Building application...'
                 dir('FetchingData'){
-                script {
-                    try {
-                        sh 'mvn clean package -DskipTests'
-                    } catch (Exception e) {
-                        echo "Build skipped: ${e.message}"
+                    script {
+                        try {
+                            sh 'mvn clean package -DskipTests'
+                        } catch (Exception e) {
+                            echo "Build skipped: ${e.message}"
+                        }
                     }
-                }
                 }
             }
         }
@@ -41,13 +40,10 @@ pipeline {
         stage('SCA - Dependency Scan') {
             steps {
                 script {
-                    echo "Running SCA for Maven project..."
+                    echo "🔍 Running SCA for Maven project..."
 
                     withCredentials([string(credentialsId: 'SNYK_TOKEN', variable: 'SNYK_TOKEN')]) {
-
-                        // Go into the real app directory that has pom.xml
                         dir('FetchingData') {
-
                             sh '''
                                 echo "Installing Snyk locally (no sudo needed)..."
                                 npm install snyk
@@ -56,8 +52,6 @@ pipeline {
                                 npx snyk auth $SNYK_TOKEN || true
 
                                 echo "Running Snyk test on FetchingData/pom.xml..."
-                                # Save full raw Snyk JSON to the reports directory
-                                # Using absolute path from workspace root
                                 npx snyk test --file=pom.xml --package-manager=maven --json \
                                     > ../security-reports/sca-raw.json 2>&1 || true
                                 
@@ -78,9 +72,8 @@ pipeline {
 
         stage('Parse SCA Report') {
             steps {
-                echo ' Parsing SCA report for LLM...'
+                echo '📊 Parsing SCA report for LLM...'
                 sh '''
-                    # Verify report exists before parsing
                     if [ -f "${REPORTS_DIR}/sca-raw.json" ]; then
                         echo "Report file found, parsing..."
                         cd parsers
@@ -93,7 +86,7 @@ pipeline {
                     fi
                 '''
 
-                echo 'SCA report parsed and ready for LLM'
+                echo '✅ SCA report parsed and ready for LLM'
             }
             
             post {
@@ -103,32 +96,26 @@ pipeline {
             }
         }
 
-
-
-
-
         stage('SAST Analysis') {
             steps {
-                echo ' Running SonarQube SAST Scan...'
+                echo '🔬 Running SonarQube SAST Scan...'
 
                 script {
                     withSonarQubeEnv('SonarQube') {
-                         sh '''
-                                # Make sure the CLI is on PATH for this step
-                                export PATH="$PATH:/opt/sonar-scanner/bin"
+                        sh '''
+                            export PATH="$PATH:/opt/sonar-scanner/bin"
 
-                                # Run analysis (include host + token)
-                                sonar-scanner \
-                                  -Dsonar.projectKey=my-project \
-                                  -Dsonar.sources=FetchingData/src \
-                                  -Dsonar.java.binaries=FetchingData/target/classes \
-                                  -Dsonar.host.url=$SONAR_HOST_URL \
-                                  -Dsonar.login=$SONAR_AUTH_TOKEN
-                              '''
+                            sonar-scanner \
+                              -Dsonar.projectKey=my-project \
+                              -Dsonar.sources=FetchingData/src \
+                              -Dsonar.java.binaries=FetchingData/target/classes \
+                              -Dsonar.host.url=$SONAR_HOST_URL \
+                              -Dsonar.login=$SONAR_AUTH_TOKEN
+                        '''
                     }
                 }
 
-                echo ' Exporting SonarQube results to JSON...'
+                echo '📤 Exporting SonarQube results to JSON...'
                 script {
                     withSonarQubeEnv('SonarQube') {
                         sh """
@@ -139,20 +126,20 @@ pipeline {
                     }
                 }
 
-                echo ' SAST scan completed'
+                echo '✅ SAST scan completed'
             }
             post {
-    always {
-        archiveArtifacts artifacts: "${REPORTS_DIR}/sast-report.json", 
-                         fingerprint: true, 
-                         allowEmptyArchive: true
-    }
-}
+                always {
+                    archiveArtifacts artifacts: "${REPORTS_DIR}/sast-report.json", 
+                                     fingerprint: true, 
+                                     allowEmptyArchive: true
+                }
+            }
         }
 
-       stage('Parse SAST Report') {
+        stage('Parse SAST Report') {
             steps {
-                echo 'Parsing SAST report for LLM...'
+                echo '📊 Parsing SAST report for LLM...'
                 
                 script {
                     sh """
@@ -162,7 +149,7 @@ pipeline {
                     """
                 }
 
-                echo ' Report parsed and ready for LLM'
+                echo '✅ Report parsed and ready for LLM'
             }
             post {
                 always {
@@ -178,7 +165,6 @@ pipeline {
                 echo "🐳 Building Docker image for application..."
                 dir('FetchingData') {
                     sh '''
-                        # Build the Docker image using your Dockerfile
                         docker build -t my-app:latest .
                         echo "✅ Docker image built successfully"
                     '''
@@ -187,55 +173,54 @@ pipeline {
         }
 
         stage('Start Application in Docker') {
-    steps {
-        echo "🚀 Starting application in Docker container on network ${DOCKER_NET}..."
-        sh '''
-            # Ensure shared network exists
-            docker network inspect "${DOCKER_NET}" >/dev/null 2>&1 || docker network create "${DOCKER_NET}"
-            
-            # Stop and remove any existing app container
-            docker stop app-container 2>/dev/null || true
-            docker rm app-container 2>/dev/null || true
-            
-            # Run your custom Docker image
-            docker run -d \
-                --name app-container \
-                --network "${DOCKER_NET}" \
-                -p ${APP_PORT}:${APP_PORT} \
-                -e SERVER_PORT=${APP_PORT} \
-                my-app:latest
-            
-            echo "Container started, waiting for app to be ready..."
-            
-            # Wait for app to be ready
-            READY=0
-            for i in $(seq 1 60); do
-                if curl -fsS "http://localhost:${APP_PORT}/actuator/health" >/dev/null 2>&1; then
-                    READY=1
-                    echo "✓ App is ready on /actuator/health"
-                    break
-                elif curl -fsS "http://localhost:${APP_PORT}/" >/dev/null 2>&1; then
-                    READY=1
-                    echo "✓ App is ready on /"
-                    break
-                fi
-                echo "Waiting... ($i/60)"
-                sleep 2
-            done
-            
-            if [ "$READY" -ne 1 ]; then
-                echo "❌ App did not become ready in time"
-                echo "Container logs:"
-                docker logs app-container
-                exit 1
-            fi
-            
-            echo "✅ App is running in container on network ${DOCKER_NET}"
-        '''
-    }
-}
+            steps {
+                echo "🚀 Starting application in Docker container on network ${DOCKER_NET}..."
+                sh '''
+                    # Ensure shared network exists
+                    docker network inspect "${DOCKER_NET}" >/dev/null 2>&1 || docker network create "${DOCKER_NET}"
+                    
+                    # Stop and remove any existing app container
+                    docker stop app-container 2>/dev/null || true
+                    docker rm app-container 2>/dev/null || true
+                    
+                    # Run your custom Docker image
+                    docker run -d \
+                        --name app-container \
+                        --network "${DOCKER_NET}" \
+                        -p ${APP_PORT}:${APP_PORT} \
+                        -e SERVER_PORT=${APP_PORT} \
+                        my-app:latest
+                    
+                    echo "Container started, waiting for app to be ready..."
+                    
+                    # Wait for app to be ready
+                    READY=0
+                    for i in $(seq 1 60); do
+                        if curl -fsS "http://localhost:${APP_PORT}/actuator/health" >/dev/null 2>&1; then
+                            READY=1
+                            echo "✓ App is ready on /actuator/health"
+                            break
+                        elif curl -fsS "http://localhost:${APP_PORT}/" >/dev/null 2>&1; then
+                            READY=1
+                            echo "✓ App is ready on /"
+                            break
+                        fi
+                        echo "Waiting... ($i/60)"
+                        sleep 2
+                    done
+                    
+                    if [ "$READY" -ne 1 ]; then
+                        echo "❌ App did not become ready in time"
+                        echo "Container logs:"
+                        docker logs app-container
+                        exit 1
+                    fi
+                    
+                    echo "✅ App is running in container on network ${DOCKER_NET}"
+                '''
+            }
+        }
 
-        // ==================== OPTIONAL: Debug network connectivity ====================
         stage('Debug - Verify Network Connectivity') {
             steps {
                 echo '🔍 Testing network connectivity...'
@@ -255,7 +240,6 @@ pipeline {
             }
         }
 
-        // ==================== CHANGED: Updated ZAP target to app-container ====================
         stage('DAST Analysis - ZAP Scan') {
             steps {
                 echo '🕷️ Running DAST scan with OWASP ZAP...'
@@ -300,7 +284,6 @@ pipeline {
             }
         }
 
-        // ==================== CHANGED: Stop Docker container instead of process ====================
         stage('Stop Application') {
             steps {
                 echo '🛑 Stopping application container...'
@@ -311,9 +294,10 @@ pipeline {
                 '''
             }
         }
+
         stage('Parse DAST Report') {
             steps {
-                echo ' Parsing DAST report for LLM...'
+                echo '📊 Parsing DAST report for LLM...'
                 script {
                     sh '''
                         if [ -f "${REPORTS_DIR}/dast-report.json" ]; then
@@ -329,7 +313,7 @@ pipeline {
                     '''
                 }
 
-                echo 'DAST report parsed and ready for LLM'
+                echo '✅ DAST report parsed and ready for LLM'
             }
             post {
                 always {
@@ -342,7 +326,7 @@ pipeline {
 
         stage('Generate Policies with AI') {
             steps {
-                echo 'Generating security policies with LLM...'
+                echo '🤖 Generating security policies with LLM...'
                 sh '''
                     python3 scripts/generate_policies.py \
                         --input ${REPORTS_DIR}/sast-findings.txt \
@@ -351,13 +335,13 @@ pipeline {
                         --framework nist-csf
                 '''
 
-                echo ' Policies generated'
+                echo '✅ Policies generated'
             }
         }
 
         stage('Display Summary') {
             steps {
-                echo ' Generating summary...'
+                echo '📋 Generating summary...'
                 sh '''
                     echo "======================================"
                     echo "PIPELINE RESULTS SUMMARY"
@@ -385,7 +369,7 @@ pipeline {
 
         stage('Archive Results') {
             steps {
-                echo ' Archiving artifacts...'
+                echo '📦 Archiving artifacts...'
                 archiveArtifacts artifacts: "${REPORTS_DIR}/*", allowEmptyArchive: false
             }
         }
@@ -393,10 +377,10 @@ pipeline {
 
     post {
         success {
-            echo ' Pipeline completed successfully!'
+            echo '✅ Pipeline completed successfully!'
         }
         failure {
-            echo 'Pipeline failed!'
+            echo '❌ Pipeline failed!'
         }
     }
 }
