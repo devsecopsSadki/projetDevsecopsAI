@@ -1,0 +1,166 @@
+{
+  "metadata": {
+    "policy_id": "POL-SCA-2025-001",
+    "policy_name": "Software Composition Analysis (SCA) Policy",
+    "status": "Active",
+    "created_date": "2025-11-05T00:00:00Z",
+    "last_updated": "2025-11-05T00:00:00Z",
+    "author": "Security Policy Generator"
+  },
+  "policy_statement": {
+    "purpose": "To manage third‑party dependency security risks and ensure supply‑chain integrity for all software assets.",
+    "description": "This policy establishes mandatory requirements for automated dependency scanning, vulnerability triage, remediation, and the creation and maintenance of a Software Bill of Materials (SBOM).",
+    "applicability": "All applications, services, containers, and infrastructure‑as‑code artifacts that incorporate third‑party libraries, packages, or open‑source components.",
+    "enforcement": "Automated SCA scans must run on every code commit and build pipeline; builds containing high‑severity (CVSS ≥7.0) vulnerable dependencies are blocked until remediation or approved exception.",
+    "exceptions": "Critical business‑critical dependencies with no viable alternatives may be approved by the Change Advisory Board (CAB) provided compensating controls such as runtime monitoring and additional penetration testing are implemented."
+  },
+  "policy_type": "SCA",
+  "executive_summary": "Our current software supply chain contains 33 known vulnerable dependencies, including 16 high‑severity findings. Immediate remediation and continuous monitoring are required to reduce exposure and comply with regulatory and contractual obligations.",
+  "scope": "Third‑party dependency and supply‑chain security for all development, test, and production environments.",
+  "objectives": [
+    "Establish a definitive, version‑controlled inventory of all third‑party components.",
+    "Detect and remediate high‑severity vulnerabilities within 7 days of discovery.",
+    "Maintain an up‑to‑date SBOM and ensure continuous compliance with licensing and security policies."
+  ],
+  "risk_assessment": {
+    "overall_risk_level": "High",
+    "critical_count": 0,
+    "high_count": 16,
+    "medium_count": 14,
+    "low_count": 3,
+    "business_impact": "Exploitation of high‑severity vulnerable libraries could lead to data breach, service disruption, or loss of intellectual property, impacting customer trust and regulatory compliance.",
+    "likelihood": "High"
+  },
+  "total_findings": 33,
+  "vulnerability_categories": [
+    "Outdated packages with known CVEs",
+    "Known malicious packages",
+    "Unmaintained libraries",
+    "License incompatibility"
+  ],
+  "security_controls": [
+    {
+      "control_id": "SC-SCA-001",
+      "nist_function": "Identify",
+      "iso_domain": "A.15 Supplier Relationships",
+      "title": "Dependency Inventory Management",
+      "description": "Maintain a centralized, version‑controlled Software Bill of Materials (SBOM) for every application repository.",
+      "implementation_steps": [
+        "Integrate sbom‑generation tools (e.g., CycloneDX, Syft) into CI pipelines.",
+        "Store SBOM files in a read‑only artifact repository linked to the source code.",
+        "Review and reconcile SBOM against approved vendor list quarterly."
+      ]
+    },
+    {
+      "control_id": "SC-SCA-002",
+      "nist_function": "Protect",
+      "iso_domain": "A.12.6.1",
+      "title": "Automated Vulnerability Scanning",
+      "description": "Run SCA scans on every pull request and nightly builds; block merges when high‑severity findings are present.",
+      "implementation_steps": [
+        "Configure SCA tool (e.g., Snyk, Dependabot, OWASP Dependency‑Check) to fail builds on CVSS ≥7.0.",
+        "Publish scan results to a centralized dashboard for visibility.",
+        "Enforce policy as code using GitHub Actions or Azure Pipelines gate."
+      ]
+    },
+    {
+      "control_id": "SC-SCA-003",
+      "nist_function": "Detect",
+      "iso_domain": "A.12.4.1",
+      "title": "Continuous Threat Intelligence Integration",
+      "description": "Subscribe to CVE feeds and vulnerability databases to automatically update scanning signatures.",
+      "implementation_steps": [
+        "Enable daily sync with NVD, GitHub Advisory Database, and vendor security bulletins.",
+        "Map incoming CVEs to affected components in the SBOM.",
+        "Trigger alerts in the Security Operations Center (SOC) when new high‑severity CVEs are identified."
+      ]
+    },
+    {
+      "control_id": "SC-SCA-004",
+      "nist_function": "Respond",
+      "iso_domain": "A.16.1.2",
+      "title": "Vulnerability Remediation Workflow",
+      "description": "Standardize a ticket‑based process for triaging, fixing, and verifying vulnerable dependencies.",
+      "implementation_steps": [
+        "Create a remediation ticket automatically for each high‑severity finding.",
+        "Assign tickets to the owning development team with a 7‑day SLA.",
+        "Require peer‑review and automated regression testing before merge."
+      ]
+    },
+    {
+      "control_id": "SC-SCA-005",
+      "nist_function": "Recover",
+      "iso_domain": "A.17.1.2",
+      "title": "Rollback and Patch Deployment",
+      "description": "Ensure rapid rollback or patch deployment mechanisms are in place for vulnerable components.",
+      "implementation_steps": [
+        "Maintain version‑controlled rollback scripts in the repository.",
+        "Test rollback procedures in a staging environment quarterly.",
+        "Document recovery steps in the incident response playbook."
+      ]
+    }
+  ],
+  "remediation_actions": [
+    {
+      "priority": "P0",
+      "title": "Patch all high‑severity vulnerable dependencies",
+      "affected_assets": [
+        "lodash@4.17.20",
+        "express@4.16.0",
+        "moment@2.24.0",
+        "axios@0.19.2",
+        "react@16.8.6"
+      ],
+      "timeline": "Immediate (0‑7 days)",
+      "owner": "DevOps Team",
+      "success_criteria": "All high‑severity CVEs resolved; no build failures due to blocked dependencies."
+    },
+    {
+      "priority": "P1",
+      "title": "Upgrade medium‑severity dependencies with known exploits",
+      "affected_assets": [
+        "chalk@2.4.2",
+        "debug@3.2.7",
+        "xml2js@0.4.19"
+      ],
+      "timeline": "Within 30 days",
+      "owner": "Application Development Leads",
+      "success_criteria": "Medium‑severity CVEs reduced by 80%; regression tests pass."
+    },
+    {
+      "priority": "P2",
+      "title": "Review low‑severity and license‑risk dependencies",
+      "affected_assets": [
+        "left-pad@1.3.0",
+        "underscore@1.9.1"
+      ],
+      "timeline": "Within 60 days",
+      "owner": "Legal & Compliance",
+      "success_criteria": "All license conflicts resolved; low‑severity CVEs documented with risk acceptance."
+    }
+  ],
+  "compliance_mapping": {
+    "nist_csf_categories": [
+      "ID.AM-2",
+      "PR.IP-12",
+      "DE.CM-8",
+      "RS.RP-1",
+      "RC.RP-1"
+    ],
+    "iso27001_controls": [
+      "A.15.1.1",
+      "A.15.1.2",
+      "A.12.6.1",
+      "A.12.4.1",
+      "A.16.1.2",
+      "A.17.1.2"
+    ]
+  },
+  "monitoring_requirements": [
+    "Daily automated SCA scans on all repositories.",
+    "Continuous CVE feed ingestion and correlation with SBOM.",
+    "Weekly license compliance reports.",
+    "Monthly KPI dashboard (mean time to remediate, scan pass rate)."
+  ],
+  "review_schedule": "Monthly dependency review meetings; quarterly formal audit of SCA process and compliance."
+}

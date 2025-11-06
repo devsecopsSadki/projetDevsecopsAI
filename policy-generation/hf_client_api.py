@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class HuggingFaceClient:
     """High-level Hugging Face API client using InferenceClient."""
 
-    def __init__(self, api_key=None, model="openai/gpt-oss-120b", provider="groq"):
+    def __init__(self, api_key=None, model="Qwen/Qwen3-Coder-30B-A3B-Instruct", provider="groq"):
         self.api_key = api_key or os.getenv("HF_TOKEN")
         if not self.api_key:
             raise ValueError("Hugging Face API key is required. Set HF_TOKEN environment variable.")
