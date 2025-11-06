@@ -173,55 +173,77 @@ pipeline {
             }
         }
 
-        stage('Start Application') {
-          steps {
-            echo "Starting application on :${APP_PORT}..."
-            dir('FetchingData') {
-              sh '''
-                # Kill leftovers & clean pid
-                pkill -f "java.*jar.*target" || true
-                rm -f app.pid
+       stage('Start Application') {
+         steps {
+           echo "Starting application on :${APP_PORT}..."
+           dir('FetchingData') {
+             sh '''
+               # Kill leftovers & clean pid
+               pkill -f "java.*jar.*target" || true
+               rm -f app.pid
 
-                ARTIFACT=$(ls target/*.jar 2>/dev/null | head -n1 || true)
-                if [ -z "$ARTIFACT" ]; then
-                  echo "No jar found in target/. Skipping run."
-                  exit 0
-                fi
+               ARTIFACT=$(ls target/*.jar 2>/dev/null | head -n1 || true)
+               if [ -z "$ARTIFACT" ]; then
+                 echo "No jar found in target/. Skipping run."
+                 exit 1
+               fi
 
-                # Run in background on desired port
-                nohup java -jar "$ARTIFACT" --server.port=''' + "${APP_PORT}" + ''' > app.log 2>&1 &
-                echo $! > app.pid
+               # Run in background; bind to all interfaces so ZAP can reach it
+               nohup java -jar "$ARTIFACT" \
+                 --server.port=${APP_PORT} \
+                 --server.address=0.0.0.0 \
+                 > app.log 2>&1 &
+               echo $! > app.pid
+               echo "Started PID $(cat app.pid)"
 
-                # Wait (max 30s) for the port to open
-                for i in $(seq 1 30); do
-                  (echo > /dev/tcp/127.0.0.1/''' + "${APP_PORT}" + ''') >/dev/null 2>&1 && { echo "App is up."; exit 0; }
-                  sleep 1
-                done
-                echo "WARNING: app did not open port ''' + "${APP_PORT}" + ''' in time."
-              '''
-            }
-          }
-        }
+               # Wait (max 45s) for readiness using curl/wget/nc
+               READY=0
+               for i in $(seq 1 45); do
+                 if command -v curl >/dev/null 2>&1; then
+                   curl -fsS "http://127.0.0.1:${APP_PORT}/actuator/health" >/dev/null 2>&1 && { READY=1; break; }
+                   curl -fsS "http://127.0.0.1:${APP_PORT}/"               >/dev/null 2>&1 && { READY=1; break; }
+                 elif command -v wget >/dev/null 2>&1; then
+                   wget -qO- "http://127.0.0.1:${APP_PORT}/actuator/health" >/dev/null 2>&1 && { READY=1; break; }
+                   wget -qO- "http://127.0.0.1:${APP_PORT}/"               >/dev/null 2>&1 && { READY=1; break; }
+                 elif command -v nc >/dev/null 2>&1; then
+                   nc -z 127.0.0.1 ${APP_PORT} && { READY=1; break; }
+                 fi
+                 sleep 1
+               done
+
+               if [ "$READY" -ne 1 ]; then
+                 echo "WARNING: app did not become ready on port ${APP_PORT} in time."
+                 echo "Last 100 lines of app.log for debugging:"
+                 tail -n 100 app.log || true
+                 exit 1
+               else
+                 echo "App is up on port ${APP_PORT}."
+               fi
+             '''
+           }
+         }
+       }
 
 
         stage('DAST Analysis - ZAP Scan') {
           steps {
             echo '🕷️ Running DAST scan with OWASP ZAP...'
             sh '''
-              echo "Starting OWASP ZAP scan against http://elegant_lichterman:''' + "${APP_PORT}" + '''"
+              echo "Starting OWASP ZAP scan against http://elegant_lichterman:${APP_PORT}"
 
-              # Make sure ZAP container can reach Jenkins container over the shared network
-              docker network inspect "''' + "${DOCKER_NET}" + '''" >/dev/null 2>&1 || docker network create "''' + "${DOCKER_NET}" + '''"
+              # Ensure shared network exists
+              docker network inspect "${DOCKER_NET}" >/dev/null 2>&1 || docker network create "${DOCKER_NET}"
+
               docker run --rm \
-                --network "''' + "${DOCKER_NET}" + '''" \
-                -v "${WORKSPACE}/''' + "${REPORTS_DIR}" + '''":/zap/wrk/:rw" \
+                --network "${DOCKER_NET}" \
+                -v "${WORKSPACE}/${REPORTS_DIR}:/zap/wrk/:rw" \
                 owasp/zap2docker-stable zap-baseline.py \
-                -t "http://elegant_lichterman:''' + "${APP_PORT}" + '''" \
+                -t "http://elegant_lichterman:${APP_PORT}" \
                 -J dast-report.json \
                 -r dast-report.html || true
 
               echo "Verifying DAST report was created..."
-              ls -lh "${WORKSPACE}/''' + "${REPORTS_DIR}" + '''/dast-report.json" || echo "WARNING: DAST report not created"
+              ls -lh "${WORKSPACE}/${REPORTS_DIR}/dast-report.json" || echo "WARNING: DAST report not created"
             '''
             echo 'DAST scan completed'
           }
@@ -233,6 +255,7 @@ pipeline {
             }
           }
         }
+
 
 
         stage('Stop Application') {
