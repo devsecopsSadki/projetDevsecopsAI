@@ -1,0 +1,132 @@
+{
+  "metadata": {
+    "policy_id": "POL-DAST-2025-001",
+    "policy_name": "Dynamic Application Security Testing (DAST) Policy",
+    "status": "Active",
+    "created_date": "2025-11-05T00:00:00Z",
+    "last_updated": "2025-11-05T00:00:00Z",
+    "author": "Security Policy Generator"
+  },
+  "policy_statement": {
+    "purpose": "To identify and remediate runtime security vulnerabilities through dynamic testing",
+    "description": "This policy defines requirements for DAST implementation, runtime security monitoring, and production security hardening",
+    "applicability": "All web applications, APIs, and internet‑facing services",
+    "enforcement": "Pre‑production DAST scans required before deployment to production",
+    "exceptions": "Internal‑only applications may use reduced scan frequency with documented approval"
+  },
+  "policy_type": "DAST",
+  "executive_summary": "Current runtime scanning has uncovered three medium‑severity findings that expose the organization to data leakage, content spoofing, and speculative execution attacks. Immediate remediation and hardened scanning processes are required to reduce the attack surface and align with NIST CSF and ISO 27001 controls.",
+  "scope": "Runtime application security and supporting infrastructure for all internet‑facing services",
+  "objectives": [
+    "Identify runtime vulnerabilities before code reaches production",
+    "Remediate identified findings within defined timeframes",
+    "Maintain continuous compliance with NIST CSF and ISO 27001 security controls"
+  ],
+  "risk_assessment": {
+    "overall_risk_level": "Medium",
+    "critical_count": 0,
+    "high_count": 0,
+    "medium_count": 3,
+    "low_count": 0,
+    "business_impact": "Exploitation could lead to information disclosure, cross‑site scripting, and reduced confidence in service integrity, potentially impacting customer trust and regulatory compliance.",
+    "likelihood": "Medium"
+  },
+  "total_findings": 3,
+  "vulnerability_categories": [
+    "Missing security headers",
+    "Insufficient site isolation",
+    "Cacheable content without proper controls"
+  ],
+  "security_controls": [
+    {
+      "control_id": "SC-DAST-001",
+      "nist_function": "Protect",
+      "iso_domain": "A.13 Communications Security",
+      "title": "Security Headers Implementation",
+      "description": "Enforce mandatory HTTP security headers to protect against content sniffing and click‑jacking.",
+      "implementation_steps": [
+        "Update web server configuration to include X-Content-Type-Options: nosniff",
+        "Add X-Frame-Options: SAMEORIGIN and Content‑Security‑Policy headers",
+        "Automate header verification in CI/CD pipeline using a linting tool"
+      ]
+    },
+    {
+      "control_id": "SC-DAST-002",
+      "nist_function": "Protect",
+      "iso_domain": "A.12 Operations Security",
+      "title": "Cache Control and Content Hardening",
+      "description": "Prevent sensitive or dynamic content from being stored or cached unintentionally.",
+      "implementation_steps": [
+        "Set Cache-Control: no-store, no-cache for all dynamic endpoints",
+        "Review and update response headers for static assets to include appropriate max‑age values",
+        "Integrate automated DAST rule to flag cacheable responses lacking proper directives"
+      ]
+    },
+    {
+      "control_id": "SC-DAST-003",
+      "nist_function": "Protect",
+      "iso_domain": "A.14 System Acquisition, Development and Maintenance",
+      "title": "Spectre Mitigation and Site Isolation",
+      "description": "Apply mitigations to reduce risk from speculative execution side‑channel attacks.",
+      "implementation_steps": [
+        "Enable site‑isolation features in modern browsers (e.g., Chrome's Site Isolation flag) for all public pages",
+        "Patch underlying OS and runtime libraries to latest versions containing Spectre mitigations",
+        "Validate mitigation effectiveness with vendor‑provided test suites after each release"
+      ]
+    }
+  ],
+  "remediation_actions": [
+    {
+      "priority": "P2",
+      "title": "Add Missing X-Content-Type-Options Header",
+      "affected_assets": [
+        "All web front‑ends",
+        "/api/*"
+      ],
+      "timeline": "Within 14 days",
+      "owner": "Web Operations Team",
+      "success_criteria": "All HTTP responses contain X-Content-Type-Options: nosniff header verified by automated scan"
+    },
+    {
+      "priority": "P2",
+      "title": "Restrict Storable and Cacheable Content",
+      "affected_assets": [
+        "/static/*",
+        "/api/public/*"
+      ],
+      "timeline": "Within 21 days",
+      "owner": "Application Development Team",
+      "success_criteria": "No DAST findings for cacheable content without Cache-Control or Pragma headers"
+    },
+    {
+      "priority": "P2",
+      "title": "Mitigate Spectre via Site Isolation",
+      "affected_assets": [
+        "All public web applications"
+      ],
+      "timeline": "Within 30 days",
+      "owner": "Infrastructure Security Team",
+      "success_criteria": "Site Isolation enabled in browsers for all domains and OS patches applied; spectre test suite passes"
+    }
+  ],
+  "compliance_mapping": {
+    "nist_csf_categories": [
+      "PR.IP-1",
+      "PR.DS-2",
+      "DE.CM-1"
+    ],
+    "iso27001_controls": [
+      "A.9.1.1",
+      "A.12.6.1",
+      "A.13.1.1",
+      "A.14.2.9"
+    ]
+  },
+  "monitoring_requirements": [
+    "Continuous runtime security monitoring via WAF logs",
+    "Weekly automated DAST scans on staging and production environments",
+    "Monthly review of security‑header compliance reports",
+    "Quarterly update of Spectre mitigation status"
+  ],
+  "review_schedule": "Monthly policy review and quarterly full penetration testing"
+}
