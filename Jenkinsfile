@@ -113,12 +113,18 @@ pipeline {
 
                 script {
                     withSonarQubeEnv('SonarQube') {
-                        sh """
-                            sonar-scanner \
-                                -Dsonar.projectKey=my-project \
-                                -Dsonar.sources=FetchingData/src \
-                                -Dsonar.java.binaries=FetchingData/target/classes
-                        """
+                         sh '''
+                                # Make sure the CLI is on PATH for this step
+                                export PATH="$PATH:/opt/sonar-scanner/bin"
+
+                                # Run analysis (include host + token)
+                                sonar-scanner \
+                                  -Dsonar.projectKey=my-project \
+                                  -Dsonar.sources=FetchingData/src \
+                                  -Dsonar.java.binaries=FetchingData/target/classes \
+                                  -Dsonar.host.url=$SONAR_HOST_URL \
+                                  -Dsonar.login=$SONAR_AUTH_TOKEN
+                              '''
                     }
                 }
 
