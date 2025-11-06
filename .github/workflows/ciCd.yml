@@ -158,7 +158,7 @@ jobs:
         with:
           args: >
             -Dsonar.projectKey=devsecopsSadki_projetDevsecopsAI
-            -Dsonar.organization=devsecopsSadki
+            -Dsonar.organization=devsecopssadki
             -Dsonar.sources=FetchingData/src
             -Dsonar.java.binaries=FetchingData/target/classes
 
