@@ -242,7 +242,7 @@ pipeline {
 
               # Optional: verify the target really returns 200 before scanning
               set -e
-              curl -s -o /dev/null -w "%{http_code}\\n" "http://elegant_lichterman:${APP_PORT}${ZAP_PATH}" | grep -E "^(200|302)$" || {
+curl -s -o /dev/null -w "%{http_code}\\n" "http://elegant_lichterman:${APP_PORT}${ZAP_PATH}" | grep -E "^(200|302)\\$" || {
                 echo "Target URL is not 200/302. Update ZAP_PATH to a page that returns 200."
                 exit 1
               }
