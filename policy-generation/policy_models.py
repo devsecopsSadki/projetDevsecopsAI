@@ -7,15 +7,10 @@ class PolicyMetadata(BaseModel):
     """Policy metadata and governance information"""
     policy_id: str  # e.g., "POL-SAST-2024-001"
     policy_name: str
-    version: str
     status: str  # Draft, Active, Under Review, Archived
     created_date: datetime
     last_updated: datetime
-    next_review_date: str
     author: str
-    approved_by: Optional[str] = None
-    department: str
-    classification: str  # Public, Internal, Confidential, Restricted
 
 
 class PolicyStatement(BaseModel):

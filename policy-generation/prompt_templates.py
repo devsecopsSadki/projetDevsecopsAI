@@ -24,15 +24,10 @@ OUTPUT JSON STRUCTURE (MUST INCLUDE ALL FIELDS):
   "metadata": {{
     "policy_id": "POL-SAST-2025-001",
     "policy_name": "Static Application Security Testing (SAST) Policy",
-    "version": "1.0",
-    "status": "Draft",
+    "status": "Acive",
     "created_date": "2025-11-05T00:00:00",
     "last_updated": "2025-11-05T00:00:00",
-    "next_review_date": "2026-02-05",
     "author": "Security Policy Generator",
-    "approved_by": null,
-    "department": "Information Security",
-    "classification": "Internal"
   }},
   
   "policy_statement": {{
@@ -106,15 +101,10 @@ OUTPUT JSON STRUCTURE (MUST INCLUDE ALL FIELDS):
   "metadata": {{
     "policy_id": "POL-SCA-2025-001",
     "policy_name": "Software Composition Analysis (SCA) Policy",
-    "version": "1.0",
-    "status": "Draft",
+    "status": "Active",
     "created_date": "2025-11-05T00:00:00",
     "last_updated": "2025-11-05T00:00:00",
-    "next_review_date": "2026-02-05",
     "author": "Security Policy Generator",
-    "approved_by": null,
-    "department": "Information Security",
-    "classification": "Internal"
   }},
   
   "policy_statement": {{
@@ -188,15 +178,10 @@ OUTPUT JSON STRUCTURE (MUST INCLUDE ALL FIELDS):
   "metadata": {{
     "policy_id": "POL-DAST-2025-001",
     "policy_name": "Dynamic Application Security Testing (DAST) Policy",
-    "version": "1.0",
-    "status": "Draft",
+    "status": "Active",
     "created_date": "2025-11-05T00:00:00",
     "last_updated": "2025-11-05T00:00:00",
-    "next_review_date": "2026-02-05",
     "author": "Security Policy Generator",
-    "approved_by": null,
-    "department": "Information Security",
-    "classification": "Internal"
   }},
   
   "policy_statement": {{

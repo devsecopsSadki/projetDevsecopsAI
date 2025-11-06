@@ -11,6 +11,40 @@ from policy_models import SecurityPolicy
 logging.basicConfig(level=logging.INFO, format='%(message)s')
 logger = logging.getLogger(__name__)
 
+def compute_risk_metrics(vulns):
+    """Compute overall and average risk levels dynamically."""
+    if not vulns:
+        return {
+            "overall_risk_level": "None",
+            "average_risk_level": "None",
+            "average_risk_score": 0.0,
+        }
+
+    weights = {"LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
+    scores = [weights.get(v.get("severity", "").upper(), 0) for v in vulns]
+    avg_score = sum(scores) / len(scores)
+    max_score = max(scores)
+
+    # Convert numeric to descriptive levels
+    if avg_score >= 3.5:
+        avg_label = "Critical"
+    elif avg_score >= 2.5:
+        avg_label = "High"
+    elif avg_score >= 1.5:
+        avg_label = "Medium"
+    else:
+        avg_label = "Low"
+
+    level_map = {4: "Critical", 3: "High", 2: "Medium", 1: "Low"}
+    overall_label = level_map.get(max_score, "None")
+
+    return {
+        "overall_risk_level": overall_label,
+        "average_risk_level": avg_label,
+        "average_risk_score": round(avg_score, 2),
+    }
+
+
 
 def load_findings_from_txt(report_path):
     """Load vulnerability findings from text report"""
@@ -111,19 +145,17 @@ def generate_policy(report_path, policy_type, output_path, api_key=None, model=N
         
         from datetime import datetime, timedelta
         now = datetime.now()
-        
+
+        risk_metrics = compute_risk_metrics(findings)
+
         policy = SecurityPolicy(
             metadata={
                 "policy_id": f"POL-{policy_type}-{now.strftime('%Y-%m-%d')}",
                 "policy_name": f"{policy_type} Security Policy",
-                "version": "1.0",
-                "status": "Draft",
+                "status": "Active",
                 "created_date": now.isoformat(),
                 "last_updated": now.isoformat(),
-                "next_review_date": (now + timedelta(days=90)).strftime('%Y-%m-%d'),
-                "author": "Automated Policy Generator",
-                "department": "Information Security",
-                "classification": "Internal"
+                "author": "Automated Policy Generator"
             },
             policy_statement={
                 "purpose": f"To address security vulnerabilities identified in {policy_type} scanning",
@@ -135,15 +167,15 @@ def generate_policy(report_path, policy_type, output_path, api_key=None, model=N
             executive_summary="Manual review required - automated generation failed",
             scope=f"{policy_type} security",
             objectives=["Review findings", "Implement controls"],
-            risk_assessment={
-                "overall_risk_level": "High" if counts['CRITICAL'] > 0 else "Medium",
-                "critical_count": counts['CRITICAL'],
-                "high_count": counts['HIGH'],
-                "medium_count": counts['MEDIUM'],
-                "low_count": counts['LOW'],
-                "business_impact": "To be assessed",
-                "likelihood": "To be assessed"
-            },
+            risk_assessment = {
+            **risk_metrics,
+            "critical_count": counts['CRITICAL'],
+            "high_count": counts['HIGH'],
+            "medium_count": counts['MEDIUM'],
+            "low_count": counts['LOW'],
+            "business_impact": "To be assessed",
+            "likelihood": "To be assessed"
+        },
             total_findings=len(findings),
             vulnerability_categories=["Review manually"],
             security_controls=[],
