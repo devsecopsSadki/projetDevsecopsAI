@@ -392,18 +392,45 @@ ls -lh "${WORKSPACE}/${REPORTS_DIR}" || true
     }
 
     stage('Generate Policies with AI') {
-      steps {
-        echo 'Generating security policies with LLM...'
-        sh '''
-          python3 scripts/generate_policies.py \
-            --input ${REPORTS_DIR}/sast-findings.txt \
-            --output ${REPORTS_DIR}/security-policies.json \
-            --model llama3.3 \
-            --framework nist-csf
-        '''
-        echo 'Policies generated'
-      }
+  steps {
+    echo 'Generating AI-based security policies for SAST, SCA, and DAST findings...'
+    sh '''
+      # --- SCA Policy ---
+      if [ -f "security-reports/parsed-reports/sca-findings.txt" ]; then
+        echo "Generating SCA policy..."
+        python3 policy-generation/policy_generator.py \
+          --report "security-reports/parsed-reports/sca-findings.txt" \
+          --type SCA \
+          --output "security-reports/generated-policies/sca_policy.json"
+      fi
+
+      # --- SAST Policy ---
+      if [ -f "security-reports/parsed-reports/sast-findings.txt" ]; then
+        echo "Generating SAST policy..."
+        python3 policy-generation/policy_generator.py \
+          --report "security-reports/parsed-reports/sast-findings.txt" \
+          --type SAST \
+          --output "security-reports/generated-policies/sast_policy.json"
+      fi
+
+      # --- DAST Policy ---
+      if [ -f "security-reports/parsed-reports/dast-findings.txt" ]; then
+        echo "Generating DAST policy..."
+        python3 policy-generation/policy_generator.py \
+          --report "security-reports/parsed-reports/dast-findings.txt" \
+          --type DAST \
+          --output "security-reports/generated-policies/dast_policy.json"
+      fi
+    '''
+    echo ' AI policy generation complete.'
+  }
+  post {
+    always {
+      archiveArtifacts artifacts: 'security-reports/generated-policies/*.json', fingerprint: true, allowEmptyArchive: true
     }
+  }
+}
+
 
     stage('Display Summary') {
       steps {
