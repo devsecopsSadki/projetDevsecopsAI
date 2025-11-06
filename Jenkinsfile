@@ -173,130 +173,142 @@ pipeline {
             }
         }
 
-       stage('Start Application') {
-         steps {
-           echo "Starting application on :${APP_PORT}..."
-           dir('FetchingData') {
-             sh '''
-               # Kill leftovers & clean pid
-               pkill -f "java.*jar.*target" || true
-               rm -f app.pid
+       
 
-               ARTIFACT=$(ls target/*.jar 2>/dev/null | head -n1 || true)
-               if [ -z "$ARTIFACT" ]; then
-                 echo "No jar found in target/. Skipping run."
-                 exit 1
-               fi
-
-               # Run in background; bind to all interfaces so ZAP can reach it
-               nohup java -jar "$ARTIFACT" \
-                 --server.port=${APP_PORT} \
-                 --server.address=0.0.0.0 \
-                 > app.log 2>&1 &
-               echo $! > app.pid
-               echo "Started PID $(cat app.pid)"
-
-               # Wait (max 45s) for readiness using curl/wget/nc
-               READY=0
-               for i in $(seq 1 45); do
-                 if command -v curl >/dev/null 2>&1; then
-                   curl -fsS "http://127.0.0.1:${APP_PORT}/actuator/health" >/dev/null 2>&1 && { READY=1; break; }
-                   curl -fsS "http://127.0.0.1:${APP_PORT}/"               >/dev/null 2>&1 && { READY=1; break; }
-                 elif command -v wget >/dev/null 2>&1; then
-                   wget -qO- "http://127.0.0.1:${APP_PORT}/actuator/health" >/dev/null 2>&1 && { READY=1; break; }
-                   wget -qO- "http://127.0.0.1:${APP_PORT}/"               >/dev/null 2>&1 && { READY=1; break; }
-                 elif command -v nc >/dev/null 2>&1; then
-                   nc -z 127.0.0.1 ${APP_PORT} && { READY=1; break; }
-                 fi
-                 sleep 1
-               done
-
-               if [ "$READY" -ne 1 ]; then
-                 echo "WARNING: app did not become ready on port ${APP_PORT} in time."
-                 echo "Last 100 lines of app.log for debugging:"
-                 tail -n 100 app.log || true
-                 exit 1
-               else
-                 echo "App is up on port ${APP_PORT}."
-               fi
-             '''
-           }
-         }
-       }
-
-
-        stage('DAST Analysis - ZAP Scan') {
-          steps {
-            echo '🕷️ Running DAST scan with OWASP ZAP...'
-            sh '''
-              TARGET_URL="http://host.docker.internal:${APP_PORT}${ZAP_PATH}"
-              echo "Starting OWASP ZAP scan against ${TARGET_URL}"
-
-              # Ensure network exists (safe even if not used by target)
-              docker network inspect "${DOCKER_NET}" >/dev/null 2>&1 || docker network create "${DOCKER_NET}"
-
-              # Ensure reports dir is writable and files exist
-              mkdir -p "${WORKSPACE}/${REPORTS_DIR}"
-              chmod -R 0777 "${WORKSPACE}/${REPORTS_DIR}" || true
-              touch "${WORKSPACE}/${REPORTS_DIR}/dast-report.json" "${WORKSPACE}/${REPORTS_DIR}/dast-report.html" || true
-
-              # Verify target returns 200/302 before scanning
-              set -e
-              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${TARGET_URL}")
-              if ! echo "$HTTP_CODE" | grep -qE '^(200|302)$'; then
-                echo "Target URL returned HTTP $HTTP_CODE. Update ZAP_PATH to a page that returns 200."
-                exit 1
-              fi
-              set +e
-
-              # Run ZAP baseline scan (writes reports into mounted folder)
-              docker run --rm \
-                --network "${DOCKER_NET}" \
-                --user 0 \
-                -v "${WORKSPACE}/${REPORTS_DIR}:/zap/wrk/:rw" \
-                -w /zap/wrk \
-                zaproxy/zap-stable zap-baseline.py \
-                  -t "${TARGET_URL}" \
-                  -J dast-report.json \
-                  -r dast-report.html || true
-
-              echo "Verifying DAST report was created..."
-              ls -lh "${WORKSPACE}/${REPORTS_DIR}/dast-report.json" || echo "WARNING: DAST report not created"
-            '''
-            echo 'DAST scan completed'
-          }
-          post {
-            always {
-              archiveArtifacts artifacts: "${REPORTS_DIR}/dast-report.json,${REPORTS_DIR}/dast-report.html",
-                               fingerprint: true,
-                               allowEmptyArchive: true
+        stage('Start Application in Docker') {
+            steps {
+                echo "🚀 Starting application in Docker container on network ${DOCKER_NET}..."
+                sh '''
+                    # Ensure shared network exists
+                    docker network inspect "${DOCKER_NET}" >/dev/null 2>&1 || docker network create "${DOCKER_NET}"
+                    
+                    # Stop and remove any existing app container
+                    docker stop app-container 2>/dev/null || true
+                    docker rm app-container 2>/dev/null || true
+                    
+                    # Find the JAR file
+                    ARTIFACT=$(ls FetchingData/target/*.jar 2>/dev/null | head -n1 || true)
+                    if [ -z "$ARTIFACT" ]; then
+                        echo "ERROR: No jar found in FetchingData/target/"
+                        exit 1
+                    fi
+                    
+                    echo "Found artifact: $ARTIFACT"
+                    
+                    # Run app in Docker container on the shared network
+                    # Using openjdk image, mount the JAR, and run it
+                    docker run -d \
+                        --name app-container \
+                        --network "${DOCKER_NET}" \
+                        -p ${APP_PORT}:${APP_PORT} \
+                        -v "${WORKSPACE}/FetchingData/target:/app:ro" \
+                        openjdk:17-slim \
+                        java -jar /app/$(basename $ARTIFACT) --server.port=${APP_PORT} --server.address=0.0.0.0
+                    
+                    echo "Container started, waiting for app to be ready..."
+                    
+                    # Wait for app to be ready (check from Jenkins side via published port)
+                    READY=0
+                    for i in $(seq 1 60); do
+                        if curl -fsS "http://localhost:${APP_PORT}/actuator/health" >/dev/null 2>&1; then
+                            READY=1
+                            echo "✓ App is ready on /actuator/health"
+                            break
+                        elif curl -fsS "http://localhost:${APP_PORT}/" >/dev/null 2>&1; then
+                            READY=1
+                            echo "✓ App is ready on /"
+                            break
+                        fi
+                        echo "Waiting... ($i/60)"
+                        sleep 2
+                    done
+                    
+                    if [ "$READY" -ne 1 ]; then
+                        echo "❌ App did not become ready in time"
+                        echo "Container logs:"
+                        docker logs app-container
+                        exit 1
+                    fi
+                    
+                    echo "✅ App is running in container on network ${DOCKER_NET}"
+                '''
             }
-          }
         }
 
+        // ==================== OPTIONAL: Debug network connectivity ====================
+        stage('Debug - Verify Network Connectivity') {
+            steps {
+                echo '🔍 Testing network connectivity...'
+                sh '''
+                    echo "1. Testing from Jenkins to app container via localhost:${APP_PORT}"
+                    curl -s -o /dev/null -w "HTTP %{http_code}\\n" "http://localhost:${APP_PORT}/" || echo "Failed"
+                    
+                    echo ""
+                    echo "2. Testing from temporary container on ${DOCKER_NET} network:"
+                    docker run --rm --network "${DOCKER_NET}" curlimages/curl:latest \
+                        curl -s -o /dev/null -w "HTTP %{http_code}\\n" "http://app-container:${APP_PORT}/" || echo "Failed"
+                    
+                    echo ""
+                    echo "3. Showing containers on network:"
+                    docker network inspect "${DOCKER_NET}" | grep -A 5 "Containers" || true
+                '''
+            }
+        }
 
+        // ==================== CHANGED: Updated ZAP target to app-container ====================
+        stage('DAST Analysis - ZAP Scan') {
+            steps {
+                echo '🕷️ Running DAST scan with OWASP ZAP...'
+                sh '''
+                    echo "Starting OWASP ZAP scan against http://app-container:${APP_PORT}"
 
+                    # Create reports directory with proper permissions
+                    mkdir -p "${WORKSPACE}/${REPORTS_DIR}"
+                    chmod 777 "${WORKSPACE}/${REPORTS_DIR}"
+                    
+                    # Pre-create report files
+                    touch "${WORKSPACE}/${REPORTS_DIR}/dast-report.json"
+                    touch "${WORKSPACE}/${REPORTS_DIR}/dast-report.html"
+                    chmod 666 "${WORKSPACE}/${REPORTS_DIR}/dast-report.json"
+                    chmod 666 "${WORKSPACE}/${REPORTS_DIR}/dast-report.html"
 
+                    # Run ZAP on the same network as the app
+                    docker run --rm \
+                        --network "${DOCKER_NET}" \
+                        --user root \
+                        -v "${WORKSPACE}/${REPORTS_DIR}:/zap/wrk/:rw" \
+                        zaproxy/zap-stable zap-baseline.py \
+                            -t "http://app-container:${APP_PORT}" \
+                            -g gen.conf \
+                            -J /zap/wrk/dast-report.json \
+                            -r /zap/wrk/dast-report.html \
+                            -I || true
 
+                    echo ""
+                    echo "Verifying DAST reports were created..."
+                    ls -lh "${WORKSPACE}/${REPORTS_DIR}/dast-report.json" || echo "WARNING: JSON report not created"
+                    ls -lh "${WORKSPACE}/${REPORTS_DIR}/dast-report.html" || echo "WARNING: HTML report not created"
+                '''
+                echo '✅ DAST scan completed'
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: "${REPORTS_DIR}/dast-report.json,${REPORTS_DIR}/dast-report.html",
+                                     fingerprint: true,
+                                     allowEmptyArchive: true
+                }
+            }
+        }
+
+        // ==================== CHANGED: Stop Docker container instead of process ====================
         stage('Stop Application') {
             steps {
-                echo '🛑 Stopping application...'
-                dir('FetchingData') {
-                    script {
-                        sh '''
-                            if [ -f app.pid ]; then
-                                PID=$(cat app.pid)
-                                echo "Stopping application (PID: $PID)..."
-                                kill $PID 2>/dev/null || true
-                                rm -f app.pid
-                                echo "Application stopped"
-                            else
-                                echo "No PID file found, trying to kill by process name..."
-                                pkill -f "java.*jar.*target" || true
-                            fi
-                        '''
-                    }
-                }
+                echo '🛑 Stopping application container...'
+                sh '''
+                    docker stop app-container 2>/dev/null || true
+                    docker rm app-container 2>/dev/null || true
+                    echo "✅ Application container stopped and removed"
+                '''
             }
         }
 
