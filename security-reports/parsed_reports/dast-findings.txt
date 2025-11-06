@@ -1,0 +1,35 @@
+Résumé DAST — tests dynamiques (formaté pour LLM)
+Source: OWASP ZAP Baseline Scan
+
+Total des vulnérabilités trouvées: 3
+
+--- DAST Finding #1 ---
+Vulnerability: Spring Actuator Information Leak
+Severity: Medium (Medium)
+Confidence: 2
+Target (URL/Endpoint): http://app-container:8080/actuator/health
+Description: <p>Spring Actuator for Health is enabled and may reveal sensitive information about this application. Spring Actuators can be used for real monitoring purposes, but should be used with caution as to not expose too much information about the application or the infrastructure running it.</p>
+Recommendation: <p>Disable the Health Actuators and other actuators, or restrict them to administrative users.</p>
+CWE ID: 215
+WASC ID: 13
+
+--- DAST Finding #2 ---
+Vulnerability: X-Content-Type-Options Header Missing
+Severity: Low (Medium)
+Confidence: 2
+Target (URL/Endpoint): http://app-container:8080/actuator/health
+Description: <p>The Anti-MIME-Sniffing header X-Content-Type-Options was not set to 'nosniff'. This allows older versions of Internet Explorer and Chrome to perform MIME-sniffing on the response body, potentially causing the response body to be interpreted and displayed as a content type other than the declared content type. Current (early 2014) and legacy versions of Firefox will use the declared content type (if one is set), rather than performing MIME-sniffing.</p>
+Recommendation: <p>Ensure that the application/web server sets the Content-Type header appropriately, and that it sets the X-Content-Type-Options header to 'nosniff' for all web pages.</p><p>If possible, ensure that the end user uses a standards-compliant and modern web browser that does not perform MIME-sniffing at all, or that can be directed by the web application/web server to not perform MIME-sniffing.</p>
+CWE ID: 693
+WASC ID: 15
+
+--- DAST Finding #3 ---
+Vulnerability: User Agent Fuzzer
+Severity: Informational (Medium)
+Confidence: 2
+Target (URL/Endpoint): http://app-container:8080
+Description: <p>Check for differences in response based on fuzzed User Agent (eg. mobile sites, access as a Search Engine Crawler). Compares the response statuscode and the hashcode of the response body with the original response.</p>
+Recommendation: Vérifier la configuration et corriger la vulnérabilité.
+CWE ID: 0
+WASC ID: 0
+

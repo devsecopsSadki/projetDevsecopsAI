@@ -1,0 +1,543 @@
+Résumé SAST — formaté pour LLM
+Chaque entrée: Title, Location, Description, Recommendation
+
+--- Finding #1 ---
+Titre: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Config/AppConfig.java:1
+Description: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Recommandation: Fix java:S120 - Refer to SonarQube documentation
+
+--- Finding #2 ---
+Titre: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Controllers/AddSatelliteRequest.java:1
+Description: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Recommandation: Fix java:S120 - Refer to SonarQube documentation
+
+--- Finding #3 ---
+Titre: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Controllers/SatelliteController.java:1
+Description: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Recommandation: Fix java:S120 - Refer to SonarQube documentation
+
+--- Finding #4 ---
+Titre: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Controllers/UserController.java:1
+Description: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Recommandation: Fix java:S120 - Refer to SonarQube documentation
+
+--- Finding #5 ---
+Titre: This block of commented-out lines of code should be removed.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Controllers/UserController.java:49
+Description: This block of commented-out lines of code should be removed.
+Recommandation: Fix java:S125 - Refer to SonarQube documentation
+
+--- Finding #6 ---
+Titre: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Entities/Satellite.java:1
+Description: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Recommandation: Fix java:S120 - Refer to SonarQube documentation
+
+--- Finding #7 ---
+Titre: Remove this unused "name" private field.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Entities/Satellite.java:14
+Description: Remove this unused "name" private field.
+Recommandation: Fix java:S1068 - Refer to SonarQube documentation
+
+--- Finding #8 ---
+Titre: Rename this field "norad_id" to match the regular expression '^[a-z][a-zA-Z0-9]*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Entities/Satellite.java:15
+Description: Rename this field "norad_id" to match the regular expression '^[a-z][a-zA-Z0-9]*$'.
+Recommandation: Fix java:S116 - Refer to SonarQube documentation
+
+--- Finding #9 ---
+Titre: Remove this unused "norad_id" private field.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Entities/Satellite.java:15
+Description: Remove this unused "norad_id" private field.
+Recommandation: Fix java:S1068 - Refer to SonarQube documentation
+
+--- Finding #10 ---
+Titre: Rename this field "Owner" to match the regular expression '^[a-z][a-zA-Z0-9]*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Entities/Satellite.java:16
+Description: Rename this field "Owner" to match the regular expression '^[a-z][a-zA-Z0-9]*$'.
+Recommandation: Fix java:S116 - Refer to SonarQube documentation
+
+--- Finding #11 ---
+Titre: Remove this unused "Owner" private field.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Entities/Satellite.java:16
+Description: Remove this unused "Owner" private field.
+Recommandation: Fix java:S1068 - Refer to SonarQube documentation
+
+--- Finding #12 ---
+Titre: Remove this unused "launchDate" private field.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Entities/Satellite.java:17
+Description: Remove this unused "launchDate" private field.
+Recommandation: Fix java:S1068 - Refer to SonarQube documentation
+
+--- Finding #13 ---
+Titre: Remove this unused "launchSite" private field.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Entities/Satellite.java:18
+Description: Remove this unused "launchSite" private field.
+Recommandation: Fix java:S1068 - Refer to SonarQube documentation
+
+--- Finding #14 ---
+Titre: Remove this unused "popular" private field.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Entities/Satellite.java:19
+Description: Remove this unused "popular" private field.
+Recommandation: Fix java:S1068 - Refer to SonarQube documentation
+
+--- Finding #15 ---
+Titre: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Entities/TLEData.java:1
+Description: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Recommandation: Fix java:S120 - Refer to SonarQube documentation
+
+--- Finding #16 ---
+Titre: Remove this unused "satelliteId" private field.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Entities/TLEData.java:16
+Description: Remove this unused "satelliteId" private field.
+Recommandation: Fix java:S1068 - Refer to SonarQube documentation
+
+--- Finding #17 ---
+Titre: Remove this unused "satelliteName" private field.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Entities/TLEData.java:17
+Description: Remove this unused "satelliteName" private field.
+Recommandation: Fix java:S1068 - Refer to SonarQube documentation
+
+--- Finding #18 ---
+Titre: Remove this unused "lastUpdated" private field.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Entities/TLEData.java:20
+Description: Remove this unused "lastUpdated" private field.
+Recommandation: Fix java:S1068 - Refer to SonarQube documentation
+
+--- Finding #19 ---
+Titre: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Entities/User.java:1
+Description: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Recommandation: Fix java:S120 - Refer to SonarQube documentation
+
+--- Finding #20 ---
+Titre: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Repositories/SatelliteRepository.java:1
+Description: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Recommandation: Fix java:S120 - Refer to SonarQube documentation
+
+--- Finding #21 ---
+Titre: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Repositories/TLEDataRepository.java:1
+Description: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Recommandation: Fix java:S120 - Refer to SonarQube documentation
+
+--- Finding #22 ---
+Titre: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Repositories/UserRepository.java:1
+Description: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Recommandation: Fix java:S120 - Refer to SonarQube documentation
+
+--- Finding #23 ---
+Titre: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/Interfaces/SatelliteService.java:1
+Description: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Recommandation: Fix java:S120 - Refer to SonarQube documentation
+
+--- Finding #24 ---
+Titre: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/Interfaces/UserService.java:1
+Description: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Recommandation: Fix java:S120 - Refer to SonarQube documentation
+
+--- Finding #25 ---
+Titre: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:1
+Description: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Recommandation: Fix java:S120 - Refer to SonarQube documentation
+
+--- Finding #26 ---
+Titre: Remove this unused "MU_EARTH" private field.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:18
+Description: Remove this unused "MU_EARTH" private field.
+Recommandation: Fix java:S1068 - Refer to SonarQube documentation
+
+--- Finding #27 ---
+Titre: Remove this unused "EARTH_RADIUS" private field.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:19
+Description: Remove this unused "EARTH_RADIUS" private field.
+Recommandation: Fix java:S1068 - Refer to SonarQube documentation
+
+--- Finding #28 ---
+Titre: Remove this unused "KAFKA_TOPIC" private field.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:20
+Description: Remove this unused "KAFKA_TOPIC" private field.
+Recommandation: Fix java:S1068 - Refer to SonarQube documentation
+
+--- Finding #29 ---
+Titre: Remove this unused "logger" private field.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:24
+Description: Remove this unused "logger" private field.
+Recommandation: Fix java:S1068 - Refer to SonarQube documentation
+
+--- Finding #30 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:30
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #31 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:45
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #32 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:47
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #33 ---
+Titre: Define a constant instead of duplicating this literal "satellite_id" 4 times.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:50
+Description: Define a constant instead of duplicating this literal "satellite_id" 4 times.
+Recommandation: Fix java:S1192 - Refer to SonarQube documentation
+
+--- Finding #34 ---
+Titre: Define a constant instead of duplicating this literal "satellite_name" 4 times.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:54
+Description: Define a constant instead of duplicating this literal "satellite_name" 4 times.
+Recommandation: Fix java:S1192 - Refer to SonarQube documentation
+
+--- Finding #35 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:59
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #36 ---
+Titre: Define a constant instead of duplicating this literal "orbital_altitude" 3 times.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:61
+Description: Define a constant instead of duplicating this literal "orbital_altitude" 3 times.
+Recommandation: Fix java:S1192 - Refer to SonarQube documentation
+
+--- Finding #37 ---
+Titre: Rename this local variable to match the regular expression '^[a-z][a-zA-Z0-9]*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:62
+Description: Rename this local variable to match the regular expression '^[a-z][a-zA-Z0-9]*$'.
+Recommandation: Fix java:S117 - Refer to SonarQube documentation
+
+--- Finding #38 ---
+Titre: Rename this local variable to match the regular expression '^[a-z][a-zA-Z0-9]*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:76
+Description: Rename this local variable to match the regular expression '^[a-z][a-zA-Z0-9]*$'.
+Recommandation: Fix java:S117 - Refer to SonarQube documentation
+
+--- Finding #39 ---
+Titre: Rename this local variable to match the regular expression '^[a-z][a-zA-Z0-9]*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:80
+Description: Rename this local variable to match the regular expression '^[a-z][a-zA-Z0-9]*$'.
+Recommandation: Fix java:S117 - Refer to SonarQube documentation
+
+--- Finding #40 ---
+Titre: Remove this useless assignment to local variable "orbitalPeriod".
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:82
+Description: Remove this useless assignment to local variable "orbitalPeriod".
+Recommandation: Fix java:S1854 - Refer to SonarQube documentation
+
+--- Finding #41 ---
+Titre: Remove this unused "orbitalPeriod" local variable.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:82
+Description: Remove this unused "orbitalPeriod" local variable.
+Recommandation: Fix java:S1481 - Refer to SonarQube documentation
+
+--- Finding #42 ---
+Titre: This block of commented-out lines of code should be removed.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:83
+Description: This block of commented-out lines of code should be removed.
+Recommandation: Fix java:S125 - Refer to SonarQube documentation
+
+--- Finding #43 ---
+Titre: Rename this local variable to match the regular expression '^[a-z][a-zA-Z0-9]*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:87
+Description: Rename this local variable to match the regular expression '^[a-z][a-zA-Z0-9]*$'.
+Recommandation: Fix java:S117 - Refer to SonarQube documentation
+
+--- Finding #44 ---
+Titre: Cast one of the operands of this division operation to a "double".
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:87
+Description: Cast one of the operands of this division operation to a "double".
+Recommandation: Fix java:S2184 - Refer to SonarQube documentation
+
+--- Finding #45 ---
+Titre: Rename this local variable to match the regular expression '^[a-z][a-zA-Z0-9]*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:88
+Description: Rename this local variable to match the regular expression '^[a-z][a-zA-Z0-9]*$'.
+Recommandation: Fix java:S117 - Refer to SonarQube documentation
+
+--- Finding #46 ---
+Titre: Cast one of the operands of this division operation to a "double".
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:91
+Description: Cast one of the operands of this division operation to a "double".
+Recommandation: Fix java:S2184 - Refer to SonarQube documentation
+
+--- Finding #47 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:102
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #48 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:103
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #49 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:105
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #50 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:118
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #51 ---
+Titre: Method has 9 parameters, which is greater than 7 authorized.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:122
+Description: Method has 9 parameters, which is greater than 7 authorized.
+Recommandation: Fix java:S107 - Refer to SonarQube documentation
+
+--- Finding #52 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:139
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #53 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:141
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #54 ---
+Titre: Rename this local variable to match the regular expression '^[a-z][a-zA-Z0-9]*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:145
+Description: Rename this local variable to match the regular expression '^[a-z][a-zA-Z0-9]*$'.
+Recommandation: Fix java:S117 - Refer to SonarQube documentation
+
+--- Finding #55 ---
+Titre: Method has 10 parameters, which is greater than 7 authorized.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:145
+Description: Method has 10 parameters, which is greater than 7 authorized.
+Recommandation: Fix java:S107 - Refer to SonarQube documentation
+
+--- Finding #56 ---
+Titre: Rename this local variable to match the regular expression '^[a-z][a-zA-Z0-9]*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:146
+Description: Rename this local variable to match the regular expression '^[a-z][a-zA-Z0-9]*$'.
+Recommandation: Fix java:S117 - Refer to SonarQube documentation
+
+--- Finding #57 ---
+Titre: Rename this local variable to match the regular expression '^[a-z][a-zA-Z0-9]*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:147
+Description: Rename this local variable to match the regular expression '^[a-z][a-zA-Z0-9]*$'.
+Recommandation: Fix java:S117 - Refer to SonarQube documentation
+
+--- Finding #58 ---
+Titre: Rename this local variable to match the regular expression '^[a-z][a-zA-Z0-9]*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:147
+Description: Rename this local variable to match the regular expression '^[a-z][a-zA-Z0-9]*$'.
+Recommandation: Fix java:S117 - Refer to SonarQube documentation
+
+--- Finding #59 ---
+Titre: Rename this local variable to match the regular expression '^[a-z][a-zA-Z0-9]*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:147
+Description: Rename this local variable to match the regular expression '^[a-z][a-zA-Z0-9]*$'.
+Recommandation: Fix java:S117 - Refer to SonarQube documentation
+
+--- Finding #60 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:164
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #61 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:166
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #62 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:180
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #63 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:182
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #64 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:188
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #65 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:191
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #66 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:196
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #67 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:200
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #68 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:204
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #69 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:208
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #70 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:211
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #71 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/KafkaConsumerService.java:216
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #72 ---
+Titre: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/SatelliteServiceImpl.java:1
+Description: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Recommandation: Fix java:S120 - Refer to SonarQube documentation
+
+--- Finding #73 ---
+Titre: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/ScheduledTask.java:1
+Description: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Recommandation: Fix java:S120 - Refer to SonarQube documentation
+
+--- Finding #74 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/ScheduledTask.java:41
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #75 ---
+Titre: This block of commented-out lines of code should be removed.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/ScheduledTask.java:46
+Description: This block of commented-out lines of code should be removed.
+Recommandation: Fix java:S125 - Refer to SonarQube documentation
+
+--- Finding #76 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/ScheduledTask.java:47
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #77 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/ScheduledTask.java:54
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #78 ---
+Titre: Remove this expression which always evaluates to "true"
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/ScheduledTask.java:77
+Description: Remove this expression which always evaluates to "true"
+Recommandation: Fix java:S2589 - Refer to SonarQube documentation
+
+--- Finding #79 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/ScheduledTask.java:79
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #80 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/ScheduledTask.java:87
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #81 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/ScheduledTask.java:95
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #82 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/ScheduledTask.java:99
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #83 ---
+Titre: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/TLEDataService.java:1
+Description: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Recommandation: Fix java:S120 - Refer to SonarQube documentation
+
+--- Finding #84 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/TLEDataService.java:29
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #85 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/TLEDataService.java:34
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #86 ---
+Titre: Replace this use of System.out or System.err by a logger.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/TLEDataService.java:42
+Description: Replace this use of System.out or System.err by a logger.
+Recommandation: Fix java:S106 - Refer to SonarQube documentation
+
+--- Finding #87 ---
+Titre: This block of commented-out lines of code should be removed.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/TLEDataService.java:46
+Description: This block of commented-out lines of code should be removed.
+Recommandation: Fix java:S125 - Refer to SonarQube documentation
+
+--- Finding #88 ---
+Titre: %n should be used in place of \n to produce the platform-specific line separator.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/TLEDataService.java:71
+Description: %n should be used in place of \n to produce the platform-specific line separator.
+Recommandation: Fix java:S3457 - Refer to SonarQube documentation
+
+--- Finding #89 ---
+Titre: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Emplacement: FetchingData/src/main/java/net/bouraoui/fetchingdata/Services/UserServiceImpl.java:1
+Description: Rename this package name to match the regular expression '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'.
+Recommandation: Fix java:S120 - Refer to SonarQube documentation
+
+--- Finding #90 ---
+Titre: Add a nested comment explaining why this method is empty, throw an UnsupportedOperationException or complete the implementation.
+Emplacement: FetchingData/src/test/java/net/bouraoui/fetchingdata/FetchingDataApplicationTests.java:10
+Description: Add a nested comment explaining why this method is empty, throw an UnsupportedOperationException or complete the implementation.
+Recommandation: Fix java:S1186 - Refer to SonarQube documentation
+
