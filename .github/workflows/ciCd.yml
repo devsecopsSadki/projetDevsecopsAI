@@ -157,7 +157,7 @@ jobs:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         with:
           args: >
-            -Dsonar.projectKey=devsecopsSadki_projetDevsecopsAI
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
             -Dsonar.organization=devsecopssadki
             -Dsonar.sources=FetchingData/src
             -Dsonar.java.binaries=FetchingData/target/classes
