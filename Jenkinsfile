@@ -8,9 +8,9 @@ pipeline {
   environment {
     REPORTS_DIR       = 'security-reports'
     DOCKER_NET        = 'secnet'
-    APP_INTERNAL_PORT = '8080'   // port INSIDE the app container
-    APP_HOST_PORT     = '8082'   // port on your Windows host
-    ZAP_PATH          = '/actuator/health' // or '/' if that’s what returns 200
+    APP_INTERNAL_PORT = '8080'   
+    APP_HOST_PORT     = '8082'  
+    ZAP_PATH          = '/actuator/health' 
   }
 
   stages {
@@ -187,12 +187,12 @@ pipeline {
           done
 
           if [ "$READY" -ne 1 ]; then
-            echo "❌ App did not become ready in time"
+            echo "App did not become ready in time"
             docker logs app-container || true
             exit 1
           fi
 
-          echo "✅ App is running in container on network ${DOCKER_NET}"
+          echo "App is running in container on network ${DOCKER_NET}"
         '''
       }
     }
@@ -218,7 +218,7 @@ pipeline {
 
     stage('DAST Analysis - ZAP Scan') {
       steps {
-        echo '🕷️ Running DAST scan with OWASP ZAP...'
+        echo ' Running DAST scan with OWASP ZAP...'
         sh '''#!/usr/bin/env bash
 set -eu
 
@@ -346,7 +346,7 @@ docker rm   "${ZAP_CONTAINER}" >/dev/null 2>&1 || true
 echo "Reports generated:"
 ls -lh "${WORKSPACE}/${REPORTS_DIR}" || true
 '''
-        echo '✅ DAST scan completed'
+        echo ' DAST scan completed'
       }
       post {
         always {
@@ -358,11 +358,11 @@ ls -lh "${WORKSPACE}/${REPORTS_DIR}" || true
 
     stage('Stop Application') {
       steps {
-        echo '🛑 Stopping application container...'
+        echo 'Stopping application container...'
         sh '''
           docker stop app-container 2>/dev/null || true
           docker rm app-container 2>/dev/null || true
-          echo "✅ Application container stopped and removed"
+          echo "Application container stopped and removed"
         '''
       }
     }
