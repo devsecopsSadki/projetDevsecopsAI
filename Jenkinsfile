@@ -152,7 +152,7 @@ pipeline {
         dir('FetchingData') {
           sh '''
             docker build --no-cache -t my-app:latest .
-            echo "✅ Docker image built successfully"
+            echo " Docker image built successfully"
           '''
         }
       }
@@ -160,7 +160,7 @@ pipeline {
 
     stage('Start Application in Docker') {
       steps {
-        echo "🚀 Starting application in Docker container on network ${DOCKER_NET}..."
+        echo " Starting application in Docker container on network ${DOCKER_NET}..."
         sh '''
           docker network inspect "${DOCKER_NET}" >/dev/null 2>&1 || docker network create "${DOCKER_NET}"
           docker rm -f app-container 2>/dev/null || true
@@ -199,7 +199,7 @@ pipeline {
 
     stage('Debug - Verify Network Connectivity') {
       steps {
-        echo '🔍 Testing network connectivity...'
+        echo ' Testing network connectivity...'
         sh '''
           echo "1) From Jenkins to app via host port:"
           curl -s -o /dev/null -w "HTTP %{http_code}\\n" "http://localhost:${APP_HOST_PORT}${ZAP_PATH}" || echo "Failed"
