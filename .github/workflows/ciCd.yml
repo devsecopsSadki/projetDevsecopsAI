@@ -15,7 +15,7 @@ env:
   IMAGE_NAME: my-app
 
 jobs:
-  # 1. Preparation & Build
+ 
   build:
     name: Build Application
     runs-on: ubuntu-latest
@@ -52,7 +52,7 @@ jobs:
           name: build-artifacts
           path: FetchingData/target/*.jar
 
-  # 2. SCA - Software Composition Analysis
+ 
   sca:
     name: SCA - Dependency Scan
     runs-on: ubuntu-latest
@@ -114,7 +114,7 @@ jobs:
             ${{ env.REPORTS_DIR }}/sca-raw.json
             ${{ env.REPORTS_DIR }}/sca-findings.txt
 
-  # 3. SAST - Static Application Security Testing
+  
   sast:
     name: SAST - SonarQube Analysis
     runs-on: ubuntu-latest
@@ -186,7 +186,7 @@ jobs:
             ${{ env.REPORTS_DIR }}/sast-report.json
             ${{ env.REPORTS_DIR }}/sast-findings.txt
 
-  # 4. Build Docker Image
+ 
   docker_build:
     name: Build Docker Image
     runs-on: ubuntu-latest
@@ -205,7 +205,7 @@ jobs:
         run: |
           cd FetchingData
           docker build --no-cache -t ${{ env.IMAGE_NAME }}:latest .
-          echo "✅ Docker image built successfully"
+          echo "Docker image built successfully"
 
       - name: Save Docker Image
         run: |
@@ -217,7 +217,6 @@ jobs:
           name: docker-image
           path: docker-image.tar.gz
 
-  # 5. DAST - Dynamic Application Security Testing
   dast:
     name: DAST - OWASP ZAP Scan
     runs-on: ubuntu-latest
@@ -265,14 +264,14 @@ jobs:
           for i in $(seq 1 120); do
             if curl -fsS "http://localhost:${{ env.APP_HOST_PORT }}${{ env.ZAP_PATH }}" >/dev/null 2>&1; then
               READY=1
-              echo "✅ App is ready"
+              echo "App is ready"
               break
             fi
             sleep 2
           done
           
           if [ "$READY" -ne 1 ]; then
-            echo "❌ App did not become ready"
+            echo " App did not become ready"
             docker logs app-container
             exit 1
           fi
@@ -381,42 +380,42 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Create reports directory
-        run: mkdir -p ${{ env.REPORTS_DIR }}
+      - name: Create output directories
+        run: mkdir -p security-reports/generated-policiesByGithubActions
 
-      - name: Download all reports
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: Consolidate reports
+      - name: Generate SCA Policy
+        if: hashFiles('security-reports/parsed-reports/sca-findings.txt') != ''
         run: |
-          cp artifacts/sca-reports/* ${{ env.REPORTS_DIR }}/ 2>/dev/null || true
-          cp artifacts/sast-reports/* ${{ env.REPORTS_DIR }}/ 2>/dev/null || true
-          cp artifacts/dast-reports/* ${{ env.REPORTS_DIR }}/ 2>/dev/null || true
-          ls -lh ${{ env.REPORTS_DIR }}/
+          echo "Generating SCA policy..."
+          python3 policy-generation/policy_generator.py \
+            --report "security-reports/parsed-reports/sca-findings.txt" \
+            --type SCA \
+            --output "security-reports/generated-policies/sca_policy.json"
 
-      - name: Install Python dependencies
+      - name: Generate SAST Policy
+        if: hashFiles('security-reports/parsed-reports/sast-findings.txt') != ''
         run: |
-          if [ -f requirements.txt ]; then
-            pip install -r requirements.txt
-          fi
+          echo "Generating SAST policy..."
+          python3 policy-generation/policy_generator.py \
+            --report "security-reports/parsed-reports/sast-findings.txt" \
+            --type SAST \
+            --output "security-reports/generated-policies/sast_policy.json"
 
-      - name: Generate Policies with LLM
+      - name: Generate DAST Policy
+        if: hashFiles('security-reports/parsed-reports/dast-findings.txt') != ''
         run: |
-          python3 scripts/generate_policies.py \
-            --input ${{ env.REPORTS_DIR }}/sast-findings.txt \
-            --output ${{ env.REPORTS_DIR }}/security-policies.json \
-            --model llama3.3 \
-            --framework nist-csf
-
+          echo "Generating DAST policy..."
+          python3 policy-generation/policy_generator.py \
+            --report "security-reports/parsed-reports/dast-findings.txt" \
+            --type DAST \
+            --output "security-reports/generated-policies/dast_policy.json"
       - name: Upload Policy Report
         uses: actions/upload-artifact@v4
         with:
           name: security-policies
           path: ${{ env.REPORTS_DIR }}/security-policies.json
 
-  # 7. Summary & Archive
+ 
   summary:
     name: Display Summary & Archive
     runs-on: ubuntu-latest
