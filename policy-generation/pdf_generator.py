@@ -145,8 +145,8 @@ def create_risk_table(risk_data):
         ['High Risks', str(risk_data.get('high_count', 0))],
         ['Medium Risks', str(risk_data.get('medium_count', 0))],
         ['Low Risks', str(risk_data.get('low_count', 0))],
-        ['Likelihood', risk_data.get('likelihood', 'N/A')],
-        ['Business Impact', risk_data.get('business_impact', 'N/A')]
+        ['Likelihood', risk_data.get('likelihood', 'N/A')]
+        #['Business Impact', risk_data.get('business_impact', 'N/A')]
     ]
     
     table = Table(data, colWidths=[2.5*inch, 3.5*inch])
