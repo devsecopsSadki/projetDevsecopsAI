@@ -395,41 +395,54 @@ ls -lh "${WORKSPACE}/${REPORTS_DIR}" || true
   steps {
     echo 'Generating AI-based security policies for SAST, SCA, and DAST findings...'
     sh '''
-      # --- SCA Policy ---
+      # Create output directories
+      mkdir -p security-reports/generated-policies
+      mkdir -p security-reports/generated-pdfs
+
+      # --- Install dependencies ---
+      pip install --upgrade pip
+      pip install reportlab PyPDF2
+
+      # --- Generate JSON policies ---
       if [ -f "security-reports/parsed-reports/sca-findings.txt" ]; then
-        echo "Generating SCA policy..."
         python3 policy-generation/policy_generator.py \
           --report "security-reports/parsed-reports/sca-findings.txt" \
           --type SCA \
           --output "security-reports/generated-policies/sca_policy.json"
       fi
 
-      # --- SAST Policy ---
       if [ -f "security-reports/parsed-reports/sast-findings.txt" ]; then
-        echo "Generating SAST policy..."
         python3 policy-generation/policy_generator.py \
           --report "security-reports/parsed-reports/sast-findings.txt" \
           --type SAST \
           --output "security-reports/generated-policies/sast_policy.json"
       fi
 
-      # --- DAST Policy ---
       if [ -f "security-reports/parsed-reports/dast-findings.txt" ]; then
-        echo "Generating DAST policy..."
         python3 policy-generation/policy_generator.py \
           --report "security-reports/parsed-reports/dast-findings.txt" \
           --type DAST \
           --output "security-reports/generated-policies/dast_policy.json"
       fi
+
+      # --- Generate PDFs from JSON policies ---
+      python3 policy-generation/pdf_generator.py \
+        --input-dir "security-reports/generated-policies" \
+        --output-dir "security-reports/generated-pdfs"
+
+      # Deactivate virtual environment
+      deactivate
     '''
-    echo ' AI policy generation complete.'
+    echo 'AI policy generation and PDF export complete.'
   }
   post {
     always {
       archiveArtifacts artifacts: 'security-reports/generated-policies/*.json', fingerprint: true, allowEmptyArchive: true
+      archiveArtifacts artifacts: 'security-reports/generated-pdfs/*.pdf', fingerprint: true, allowEmptyArchive: true
     }
   }
 }
+
 
 
     stage('Display Summary') {

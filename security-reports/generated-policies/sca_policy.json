@@ -28,7 +28,7 @@
     "high_count": 16,
     "medium_count": 14,
     "low_count": 3,
-    "business_impact": "Exploitation of high‑severity vulnerable libraries could lead to data breach, service disruption, or loss of intellectual property, impacting customer trust and regulatory compliance.",
+    "business_impact": "Data breach, service disruption, or loss of intellectual property.",
     "likelihood": "High"
   },
   "total_findings": 33,
